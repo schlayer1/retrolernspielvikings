@@ -1,0 +1,20 @@
+{
+  "name": "die-wikinger-snes-abenteuer",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "phaser": "^3.80.1"
+  },
+  "devDependencies": {
+    "node-unrar-js": "^2.0.2",
+    "puppeteer-core": "^25.14.0",
+    "typescript": "^5.5.0",
+    "vite": "^5.4.0"
+  }
+}

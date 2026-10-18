@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>DIE WIKINGER – Vom Fjord nach Vinland (780–1066 n. Chr.) | 16-Bit Geschichtslernspiel</title>
+    <link rel="icon" type="image/png" href="/assets/icons/drakkar.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --parch-bg: #fdf6e3;
+        --parch-card: #f7ecd2;
+        --parch-border: #d4af37;
+        --wood-dark: #121820;
+        --wood-panel: #1e2836;
+        --nordic-blue: #0284c7;
+        --fjord-teal: #0d9488;
+        --amber-gold: #d97706;
+        --amber-light: #fde047;
+        --text-dark: #1e130c;
+        --text-light: #fef3c7;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #080d14;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: var(--text-light);
+      }
+
+      #game-container {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+      }
+
+      #game-container canvas {
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+
+      #ui-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        pointer-events: none;
+      }
+
+      /* =====================================================
+         SINGLE-PROXIMITY WORLD DOM LABEL (< 44px)
+         ===================================================== */
+      .world-dom-label {
+        position: absolute;
+        transform: translate(-50%, -100%);
+        background: rgba(18, 24, 34, 0.94);
+        border: 1.5px solid var(--amber-gold);
+        border-radius: 6px;
+        padding: 4px 10px;
+        text-align: center;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
+        white-space: nowrap;
+        pointer-events: none;
+      }
+
+      .world-dom-label-title {
+        font-family: 'Cinzel', serif;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--amber-light);
+      }
+
+      .world-dom-label-sub {
+        font-size: 11px;
+        color: #fef3c7;
+        margin-top: 1px;
+      }
+
+      /* =====================================================
+         HUD TOP BAR & QUEST TRACKER
+         ===================================================== */
+      .hud-top-bar {
+        position: absolute;
+        top: 10px;
+        left: 12px;
+        right: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        pointer-events: auto;
+      }
+
+      .hud-left {
+        background: rgba(18, 24, 34, 0.9);
+        border: 1.5px solid var(--amber-gold);
+        border-radius: 8px;
+        padding: 6px 14px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      }
+
+      .hud-ch-badge {
+        font-size: 11px;
+        color: var(--amber-light);
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .hud-ch-title {
+        font-family: 'Cinzel', serif;
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+      }
+
+      .hud-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .hud-player-tag,
+      .hud-relics-badge {
+        background: rgba(18, 24, 34, 0.9);
+        border: 1.5px solid var(--amber-gold);
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--amber-light);
+      }
+
+      .hud-quick-buttons {
+        display: flex;
+        gap: 6px;
+      }
+
+      .hud-btn {
+        background: rgba(30, 41, 59, 0.92);
+        border: 1px solid var(--amber-gold);
+        border-radius: 6px;
+        color: #fef3c7;
+        padding: 6px 10px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.15s;
+      }
+
+      .hud-btn:hover {
+        background: var(--amber-gold);
+        color: #000;
+      }
+
+      .hud-quest-tracker {
+        position: absolute;
+        top: 65px;
+        left: 12px;
+        width: 300px;
+        background: rgba(18, 24, 34, 0.94);
+        border: 1.5px solid var(--amber-gold);
+        border-radius: 8px;
+        padding: 10px 12px;
+        pointer-events: auto;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+      }
+
+      .quest-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+      }
+
+      .quest-title-text {
+        font-family: 'Cinzel', serif;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--amber-light);
+      }
+
+      .quest-counter {
+        background: #1e293b;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .quest-counter.quest-done {
+        background: #15803d;
+        color: #fff;
+      }
+
+      .quest-desc {
+        font-size: 11px;
+        color: #e2e8f0;
+        line-height: 1.35;
+        margin-bottom: 8px;
+      }
+
+      .quest-objectives-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .quest-item {
+        font-size: 11px;
+        color: #94a3b8;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .quest-item.done {
+        color: #86efac;
+        text-decoration: line-through;
+      }
+
+      /* =====================================================
+         MODAL BACKDROP & BASE CARDS
+         ===================================================== */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(6, 10, 16, 0.82);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        pointer-events: auto;
+        padding: 16px;
+      }
+
+      .modal-card {
+        background: #151d28;
+        border: 2px solid var(--amber-gold);
+        border-radius: 12px;
+        color: #fef3c7;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
+        max-width: 950px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 20px;
+      }
+
+      .modal-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+        padding-bottom: 10px;
+      }
+
+      .modal-header-row h2 {
+        font-family: 'Cinzel', serif;
+        font-size: 18px;
+        color: var(--amber-light);
+      }
+
+      .modal-close-btn {
+        background: transparent;
+        border: none;
+        color: #e2e8f0;
+        font-size: 20px;
+        cursor: pointer;
+        padding: 4px 8px;
+      }
+
+      /* BUTTONS */
+      .btn-primary {
+        background: linear-gradient(180deg, #d97706, #b45309);
+        border: 1px solid #fef08a;
+        color: #fff;
+        font-weight: 700;
+        font-size: 13px;
+        padding: 8px 18px;
+        border-radius: 6px;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+        transition: 0.15s;
+      }
+
+      .btn-primary:hover {
+        background: linear-gradient(180deg, #f59e0b, #d97706);
+        transform: translateY(-1px);
+      }
+
+      .btn-primary.disabled,
+      .btn-primary:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-secondary {
+        background: #1e293b;
+        border: 1px solid var(--amber-gold);
+        color: #fef3c7;
+        font-weight: 600;
+        font-size: 12px;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .btn-sub {
+        background: rgba(30, 41, 59, 0.9);
+        border: 1px solid var(--amber-gold);
+        color: #fef3c7;
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      /* =====================================================
+         PARCHMENT START SCREEN (12-GRID ZERO CLIPPING)
+         ===================================================== */
+      .parchment-startscreen {
+        background: var(--parch-bg);
+        color: var(--text-dark);
+        border: 3px solid #854d0e;
+        padding: 24px;
+        max-width: 980px;
+      }
+
+      .start-header {
+        text-align: center;
+        margin-bottom: 14px;
+      }
+
+      .start-school-badge {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #854d0e;
+        letter-spacing: 1px;
+      }
+
+      .start-main-title {
+        font-family: 'Cinzel', serif;
+        font-size: 26px;
+        font-weight: 800;
+        color: #451a03;
+        margin: 3px 0;
+      }
+
+      .start-subtitle {
+        font-size: 12px;
+        color: #78350f;
+        font-weight: 600;
+      }
+
+      .start-hero-showcase {
+        background: #121820;
+        color: #fef3c7;
+        border: 1.5px solid #d4af37;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 14px;
+      }
+
+      .showcase-header {
+        font-family: 'Cinzel', serif;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--amber-light);
+        margin-bottom: 8px;
+      }
+
+      .showcase-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 8px;
+      }
+
+      .start-showcase-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(212, 175, 55, 0.4);
+        border-radius: 6px;
+        padding: 6px;
+      }
+
+      .showcase-span {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--amber-light);
+      }
+
+      .showcase-title {
+        font-family: 'Cinzel', serif;
+        font-size: 11px;
+        font-weight: 700;
+        color: #fff;
+        margin: 2px 0;
+      }
+
+      .showcase-desc {
+        font-size: 9px;
+        color: #94a3b8;
+        line-height: 1.25;
+      }
+
+      /* 12-CHAPTER RESPONSIVE GRID (Section 4.1) */
+      .parchment-chapter-grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 6px;
+        width: 100%;
+        margin-bottom: 14px;
+      }
+
+      .parchment-ch-card {
+        background: var(--parch-card);
+        border: 1.5px solid #ca8a04;
+        border-radius: 6px;
+        padding: 5px 6px;
+        min-width: 0;
+        overflow: hidden;
+        cursor: pointer;
+        transition: 0.15s;
+      }
+
+      .parchment-ch-card:hover,
+      .parchment-ch-card.active {
+        border-color: #854d0e;
+        background: #fef08a;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      .ch-card-header {
+        font-size: 10px;
+        font-weight: 700;
+        color: #854d0e;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .ch-card-title {
+        font-family: 'Cinzel', serif;
+        font-size: 11px;
+        font-weight: 700;
+        color: #1e130c;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .ch-card-sub {
+        font-size: 9px;
+        color: #573216;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .start-setup-section {
+        display: flex;
+        gap: 20px;
+        background: rgba(254, 240, 138, 0.45);
+        border: 1px solid #d4af37;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-bottom: 14px;
+      }
+
+      .start-input-group label,
+      .start-roles-section label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #451a03;
+        margin-bottom: 4px;
+        display: block;
+      }
+
+      .start-text-input {
+        background: #fff;
+        border: 1.5px solid #ca8a04;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #1e130c;
+        width: 180px;
+      }
+
+      .start-gender-row {
+        display: flex;
+        gap: 8px;
+      }
+
+      .gender-btn {
+        background: #fff;
+        border: 1.5px solid #ca8a04;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .gender-btn.active {
+        background: #b45309;
+        color: #fff;
+        border-color: #78350f;
+      }
+
+      .start-roles-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 4px;
+      }
+
+      .role-card {
+        background: #fff;
+        border: 1.5px solid #ca8a04;
+        border-radius: 6px;
+        padding: 8px;
+        cursor: pointer;
+        transition: 0.15s;
+      }
+
+      .role-card:hover,
+      .role-card.active {
+        background: #fef9c3;
+        border-color: #854d0e;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
+      }
+
+      .role-title {
+        font-family: 'Cinzel', serif;
+        font-size: 12px;
+        font-weight: 700;
+        color: #451a03;
+      }
+
+      .role-tribal {
+        font-size: 10px;
+        color: #854d0e;
+        font-weight: 600;
+        margin-bottom: 3px;
+      }
+
+      .role-desc {
+        font-size: 10px;
+        color: #573216;
+        line-height: 1.3;
+        margin-bottom: 4px;
+      }
+
+      .role-bonus {
+        font-size: 10px;
+        font-weight: 700;
+        color: #15803d;
+      }
+
+      .start-code-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 12px 0;
+        font-size: 11px;
+        font-weight: 600;
+        color: #451a03;
+      }
+
+      .code-input {
+        background: #fff;
+        border: 1px solid #ca8a04;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-family: monospace;
+        font-size: 12px;
+        width: 170px;
+      }
+
+      .start-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid #d4af37;
+        padding-top: 12px;
+      }
+
+      .start-controls-hint {
+        font-size: 11px;
+        color: #78350f;
+        font-weight: 600;
+      }
+
+      .start-launch-btn {
+        font-size: 14px;
+        padding: 10px 24px;
+      }
+
+      /* =====================================================
+         DIALOG MODAL WITH CRISP PORTRAITS & TOOLTIPS
+         ===================================================== */
+      .dialog-modal {
+        max-width: 650px;
+        background: #151d28;
+      }
+
+      .dialog-layout {
+        display: flex;
+        gap: 16px;
+      }
+
+      .dialog-portrait-box {
+        width: 100px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        flex-shrink: 0;
+      }
+
+      .dialog-avatar-frame {
+        width: 60px;
+        height: 104px;
+        background: #0b1118;
+        border: 2px solid var(--amber-gold);
+        border-radius: 6px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+      }
+
+      .dialog-avatar-img {
+        width: 48px;
+        height: 96px;
+        image-rendering: pixelated;
+        display: block;
+      }
+
+      .dialog-speaker-name {
+        font-family: 'Cinzel', serif;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--amber-light);
+      }
+
+      .dialog-speaker-role {
+        font-size: 10px;
+        color: #94a3b8;
+        margin-top: 2px;
+      }
+
+      .dialog-content-box {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .dialog-bubble-text {
+        font-size: 13.5px;
+        line-height: 1.55;
+        color: #fef3c7;
+        margin-bottom: 16px;
+      }
+
+      .lex-term-tooltip {
+        color: var(--amber-light);
+        text-decoration: underline dotted 1.5px;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      .lex-term-tooltip:hover {
+        background: rgba(217, 119, 6, 0.35);
+        border-radius: 3px;
+      }
+
+      .dialog-action-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid rgba(212, 175, 55, 0.25);
+        padding-top: 10px;
+      }
+
+      .dialog-step-indicator {
+        font-size: 11px;
+        color: #94a3b8;
+      }
+
+      /* =====================================================
+         QUIZ MODAL
+         ===================================================== */
+      .quiz-question-box {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(212, 175, 55, 0.25);
+        border-radius: 8px;
+        padding: 14px;
+        margin-bottom: 14px;
+      }
+
+      .quiz-question-title {
+        font-family: 'Cinzel', serif;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--amber-light);
+        margin-bottom: 12px;
+      }
+
+      .quiz-options-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .quiz-opt-btn {
+        background: #1e293b;
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        border-radius: 6px;
+        color: #fef3c7;
+        padding: 10px 14px;
+        text-align: left;
+        font-size: 12.5px;
+        line-height: 1.4;
+        cursor: pointer;
+        transition: 0.15s;
+      }
+
+      .quiz-opt-btn:hover {
+        background: #2e3d54;
+        border-color: var(--amber-gold);
+        transform: translateX(2px);
+      }
+
+      .quiz-feedback-box {
+        padding: 14px;
+        border-radius: 8px;
+        margin-top: 10px;
+      }
+
+      .quiz-feedback-box.correct {
+        background: rgba(22, 101, 52, 0.35);
+        border: 1.5px solid #22c55e;
+      }
+
+      .quiz-feedback-box.wrong {
+        background: rgba(153, 27, 27, 0.35);
+        border: 1.5px solid #ef4444;
+      }
+
+      /* =====================================================
+         PAUSE DASHBOARD: 7-TILES (Section 4.3)
+         ===================================================== */
+      .pause-tiles-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .pause-tile-card {
+        background: #1a2332;
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        border-radius: 8px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .tile-icon {
+        font-size: 20px;
+        margin-bottom: 4px;
+      }
+
+      .tile-title {
+        font-family: 'Cinzel', serif;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--amber-light);
+        margin-bottom: 4px;
+      }
+
+      .tile-code-display {
+        background: #0b1118;
+        border: 1px solid #ca8a04;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-family: monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: #86efac;
+        letter-spacing: 1px;
+        margin: 4px 0;
+        text-align: center;
+      }
+
+      .tile-main-stat {
+        font-size: 15px;
+        font-weight: 800;
+        color: #fef08a;
+      }
+
+      .tile-subtext {
+        font-size: 10px;
+        color: #94a3b8;
+        line-height: 1.3;
+        margin-top: 2px;
+      }
+
+      .pause-footer-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid rgba(212, 175, 55, 0.25);
+        padding-top: 12px;
+      }
+
+      .pause-controls-keymap {
+        font-size: 11px;
+        color: #94a3b8;
+      }
+
+      /* =====================================================
+         INVENTORY, CRAFTING, BUILDING, LEXICON, TIMELINE
+         ===================================================== */
+      .inv-items-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .inv-item-card {
+        background: #1a2332;
+        border: 1px solid rgba(212, 175, 55, 0.25);
+        border-radius: 8px;
+        padding: 10px;
+        display: flex;
+        gap: 12px;
+      }
+
+      .inv-item-icon-box {
+        width: 44px;
+        height: 44px;
+        background: #0b1118;
+        border: 1px solid var(--amber-gold);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .inv-item-name {
+        font-family: 'Cinzel', serif;
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--amber-light);
+      }
+
+      .inv-item-count {
+        color: #86efac;
+        font-weight: 800;
+      }
+
+      .inv-item-desc {
+        font-size: 11px;
+        color: #cbd5e1;
+        margin: 2px 0;
+      }
+
+      .inv-item-hist {
+        font-size: 10px;
+        color: #94a3b8;
+      }
+
+      .craft-recipe-card,
+      .building-card {
+        background: #1a2332;
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        border-radius: 8px;
+        padding: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .building-card.built {
+        border-color: #22c55e;
+        background: rgba(22, 101, 52, 0.15);
+      }
+
+      .building-card.current {
+        border-color: var(--amber-gold);
+        background: rgba(217, 119, 6, 0.12);
+      }
+
+      .badge-built {
+        background: #15803d;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
+      .lex-cat-btn {
+        background: #1e293b;
+        border: 1px solid rgba(212, 175, 55, 0.25);
+        color: #cbd5e1;
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .lex-cat-btn.active {
+        background: var(--amber-gold);
+        color: #000;
+        font-weight: 700;
+      }
+
+      .lex-search-input {
+        background: #0b1118;
+        border: 1px solid #ca8a04;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 13px;
+        color: #fef3c7;
+        width: 100%;
+        margin-bottom: 12px;
+      }
+
+      .lex-entries-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 60vh;
+        overflow-y: auto;
+      }
+
+      .lex-entry-card {
+        background: #1a2332;
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+
+      .lex-icon-box {
+        width: 36px;
+        height: 36px;
+        background: #0b1118;
+        border: 1px solid var(--amber-gold);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .lex-term-title {
+        font-family: 'Cinzel', serif;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--amber-light);
+      }
+
+      .lex-term-category {
+        font-size: 10px;
+        background: #0f172a;
+        color: #94a3b8;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
+      .lex-term-def {
+        font-size: 12px;
+        color: #cbd5e1;
+        line-height: 1.4;
+        margin: 4px 0;
+      }
+
+      .lex-term-merksatz {
+        font-size: 11px;
+        color: #86efac;
+      }
+
+      .timeline-phase-card {
+        background: #1a2332;
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        border-radius: 8px;
+        padding: 12px;
+      }
+
+      .timeline-phase-badge {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--amber-light);
+        text-transform: uppercase;
+      }
+
+      .timeline-phase-title {
+        font-family: 'Cinzel', serif;
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+        margin: 2px 0;
+      }
+
+      /* TOASTS */
+      .toast-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 999;
+        pointer-events: none;
+      }
+
+      .toast-msg {
+        background: rgba(18, 24, 34, 0.95);
+        border: 1.5px solid var(--amber-gold);
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #fef3c7;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+        transition: 0.3s;
+      }
+
+      .toast-msg.toast-success {
+        border-color: #22c55e;
+        color: #86efac;
+      }
+
+      .toast-msg.toast-warning {
+        border-color: #f59e0b;
+        color: #fde047;
+      }
+
+      /* =====================================================
+         TOUCH CONTROLS OVERLAY
+         ===================================================== */
+      .touch-controls-overlay {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 50;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        padding: 24px;
+      }
+
+      .touch-joystick-base {
+        width: 110px;
+        height: 110px;
+        background: rgba(18, 24, 34, 0.65);
+        border: 2px solid var(--amber-gold);
+        border-radius: 50%;
+        position: relative;
+        pointer-events: auto;
+      }
+
+      .touch-joystick-knob {
+        width: 44px;
+        height: 44px;
+        background: linear-gradient(180deg, #d97706, #b45309);
+        border: 1.5px solid #fef08a;
+        border-radius: 50%;
+        position: absolute;
+        top: 33px;
+        left: 33px;
+        pointer-events: none;
+      }
+
+      .touch-action-btn {
+        width: 72px;
+        height: 72px;
+        background: linear-gradient(180deg, #d97706, #b45309);
+        border: 2px solid #fef08a;
+        border-radius: 50%;
+        color: #fff;
+        font-family: 'Cinzel', serif;
+        font-size: 14px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: auto;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+      }
+
+      /* =====================================================
+         MOBILE HANDYMODUS (< 450px Höhe)
+         ===================================================== */
+      @media (max-height: 450px) {
+        .start-hero-showcase {
+          display: none;
+        }
+
+        .modal-card {
+          max-height: 96vh;
+          padding: 10px 14px;
+        }
+
+        .parchment-chapter-grid {
+          gap: 4px;
+        }
+
+        .parchment-ch-card {
+          padding: 3px 4px;
+        }
+
+        .start-setup-section {
+          padding: 6px 10px;
+          margin-bottom: 8px;
+        }
+
+        .hud-quest-tracker {
+          width: 240px;
+          padding: 6px 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game-container"></div>
+    <div id="ui-layer"></div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
