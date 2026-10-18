@@ -40,6 +40,7 @@ export class WorldScene extends Phaser.Scene {
   private activeTarget: InteractiveTarget | null = null;
   private labelLayer!: HTMLDivElement;
   public currentChapterData: any;
+  public currentCompassText = '';
 
   private decorManager!: WorldDecorManager;
   private wildlifeManager!: WildlifeManager;
@@ -100,6 +101,7 @@ export class WorldScene extends Phaser.Scene {
     const texKey = gameState.gender === 'female' ? 'player_astrid' : 'player_ragnar';
     this.player = this.add
       .sprite(gameState.playerX, gameState.playerY, texKey, 0)
+      .setOrigin(0.5, 0.9)
       .setDepth(gameState.playerY);
     this.livingWorldManager.registerPlayer(this.player);
 
@@ -417,24 +419,29 @@ export class WorldScene extends Phaser.Scene {
       const py = ry * 16;
 
       if (pick < 0.35) {
-        // High pine / oak tree
-        const treeFrame = pick < 0.18 ? 'tree_1' : 'tree_2';
-        const spr = this.decorManager.placeDecor(px, py, treeFrame, 1.0, 0);
+        // High pine / fir / oak trees
+        const treeFrames = ['tree_pine_1', 'tree_pine_2', 'tree_fir_1', 'tree_oak_1'];
+        const treeFrame = treeFrames[Math.floor(random(seed++) * treeFrames.length)];
+        const spr = this.decorManager.placeDecor(px, py, treeFrame, 0.72, 0);
         if (spr) this.livingWorldManager.registerFlora(spr);
       } else if (pick < 0.6) {
         // Bush / shrub
-        const bushFrame = pick < 0.48 ? 'bush_1' : 'bush_2';
-        const spr = this.decorManager.placeDecor(px, py, bushFrame, 1.0, 0);
+        const bushFrames = ['bush_a', 'bush_b', 'bush_berry_red', 'bush_berry_blue'];
+        const bushFrame = bushFrames[Math.floor(random(seed++) * bushFrames.length)];
+        const spr = this.decorManager.placeDecor(px, py, bushFrame, 0.52, 0);
         if (spr) this.livingWorldManager.registerFlora(spr);
       } else if (pick < 0.8) {
         // Fern / wild grass
-        const fernFrame = `fern_${Math.floor(random(seed++) * 4) + 1}`;
-        const spr = this.decorManager.placeDecor(px, py, fernFrame, 1.0, 0);
+        const fernFrames = ['fern_1', 'fern_2', 'fern_3', 'fern_4'];
+        const fernFrame = fernFrames[Math.floor(random(seed++) * fernFrames.length)];
+        const spr = this.decorManager.placeDecor(px, py, fernFrame, 0.45, 0);
         if (spr) this.livingWorldManager.registerFlora(spr);
       } else {
-        // Mossy stone
-        const rockFrame = `rock_moss_${String.fromCharCode(97 + Math.floor(random(seed++) * 8))}`;
-        this.decorManager.placeDecor(px, py, rockFrame, 1.0, 0);
+        // Mossy stone / pebbles
+        const rockFrames = ['rock_small_a', 'rock_small_b', 'rock_small_c', 'rock_small_d', 'rock_moss_a', 'rock_moss_b'];
+        const rockFrame = rockFrames[Math.floor(random(seed++) * rockFrames.length)];
+        const scale = rockFrame.startsWith('rock_moss_') ? 0.32 : 0.45;
+        this.decorManager.placeDecor(px, py, rockFrame, scale, 0);
       }
     }
   }
@@ -445,40 +452,41 @@ export class WorldScene extends Phaser.Scene {
   private buildStaticVikingWorld(): void {
     // --- 1. ASTRID'S FJORD FARM & VILLAGE (K1 & K3) ---
     // Great Thatched Longhouse
-    this.decorManager.placeProp(34 * 16, 26 * 16, 'viking_longhouse_thatched', 1.0);
+    this.decorManager.placeProp(34 * 16, 26 * 16, 'viking_longhouse_thatched', 0.65);
     // Huts and sheds around farm
-    this.decorManager.placeProp(26 * 16, 28 * 16, 'viking_cottage_gable', 1.0);
-    this.decorManager.placeProp(42 * 16, 26 * 16, 'viking_round_hut', 1.0);
-    this.decorManager.placeProp(38 * 16, 32 * 16, 'viking_shed_workshop', 1.0);
-    // Village Well & Wood piles
-    this.decorManager.placeProp(30 * 16, 33 * 16, 'viking_village_well', 1.0);
-    this.decorManager.placeProp(40 * 16, 34 * 16, 'viking_wood_pile_stacked', 1.0);
-    this.decorManager.placeProp(42 * 16, 34 * 16, 'viking_chopping_block', 1.0);
-    this.decorManager.placeProp(24 * 16, 36 * 16, 'viking_haystack_large', 1.0);
+    this.decorManager.placeProp(26 * 16, 28 * 16, 'viking_cottage_gable', 0.6);
+    this.decorManager.placeProp(42 * 16, 26 * 16, 'viking_round_hut', 0.6);
+    this.decorManager.placeProp(38 * 16, 32 * 16, 'viking_shed_workshop', 0.6);
+    // Village Well & Wood piles (Calibrated proportional sizes)
+    this.decorManager.placeProp(30 * 16, 33 * 16, 'viking_village_well', 0.32);
+    this.decorManager.placeProp(40 * 16, 34 * 16, 'viking_wood_pile_stacked', 0.34);
+    this.decorManager.placeProp(42 * 16, 34 * 16, 'viking_chopping_block', 0.5);
+    this.decorManager.placeProp(24 * 16, 36 * 16, 'viking_haystack_large', 0.38);
     // Hearth Fire & Roasting Boar
-    this.decorManager.placeProp(34 * 16, 32 * 16, 'viking_spit_roast_campfire', 1.0);
-    this.livingWorldManager.registerFireSource(34 * 16, 32 * 16, true, 34, 0xffa533);
+    this.decorManager.placeProp(34 * 16, 32 * 16, 'viking_spit_roast_campfire', 0.3);
+    this.livingWorldManager.registerFireSource(34 * 16, 32 * 16, true, 26, 0xffa533);
 
     // --- 2. FJORD SHORE & SHIPYARD (K3) ---
     // Wooden Harbor Pier
-    this.decorManager.placeProp(16 * 16, 20 * 16, 'viking_wooden_dock', 1.0);
+    this.decorManager.placeProp(16 * 16, 20 * 16, 'viking_wooden_dock', 0.6);
     // Moored Longships
-    this.decorManager.placeProp(10 * 16, 16 * 16, 'viking_drakkar_red_sail', 0.9);
-    this.decorManager.placeProp(8 * 16, 26 * 16, 'viking_ship_blue_sail', 0.9);
-    this.decorManager.placeProp(12 * 16, 32 * 16, 'viking_knarr_trading', 0.9);
+    this.decorManager.placeProp(10 * 16, 16 * 16, 'viking_drakkar_red_sail', 0.45);
+    this.decorManager.placeProp(8 * 16, 26 * 16, 'viking_ship_blue_sail', 0.45);
+    this.decorManager.placeProp(12 * 16, 32 * 16, 'viking_knarr_trading', 0.45);
     // Anchors & Cargo barrels
-    this.decorManager.placeProp(18 * 16, 24 * 16, 'viking_iron_anchor', 0.9);
-    this.decorManager.placeProp(19 * 16, 21 * 16, 'viking_stacked_cargo_barrels', 0.9);
-    this.decorManager.placeProp(20 * 16, 25 * 16, 'viking_fishnet_drying', 0.9);
+    this.decorManager.placeProp(18 * 16, 24 * 16, 'viking_iron_anchor', 0.35);
+    this.decorManager.placeProp(19 * 16, 21 * 16, 'viking_stacked_cargo_barrels', 0.35);
+    this.decorManager.placeProp(20 * 16, 25 * 16, 'viking_fishnet_drying', 0.38);
 
     // --- 3. SACRED BLÓT GROVE & RUNESTONES (K2) ---
-    this.decorManager.placeProp(64 * 16, 23 * 16, 'viking_blot_fire_altar', 1.0);
-    this.livingWorldManager.registerFireSource(64 * 16, 23 * 16, true, 38, 0xef4444);
-    this.decorManager.placeProp(60 * 16, 24 * 16, 'viking_runestone_futhark_red', 1.0);
-    this.decorManager.placeProp(68 * 16, 24 * 16, 'viking_runestone_knotwork', 1.0);
-    this.decorManager.placeProp(62 * 16, 20 * 16, 'viking_god_totem_odin', 0.95);
-    this.decorManager.placeProp(66 * 16, 20 * 16, 'viking_god_totem_wolf', 0.95);
-    this.decorManager.placeProp(58 * 16, 26 * 16, 'viking_banner_raven_red', 0.95);
+    this.decorManager.placeProp(64 * 16, 23 * 16, 'viking_blot_fire_altar', 0.35);
+    this.livingWorldManager.registerFireSource(64 * 16, 23 * 16, true, 30, 0xef4444);
+    this.decorManager.placeProp(60 * 16, 24 * 16, 'viking_runestone_futhark_red', 0.36);
+    this.decorManager.placeProp(68 * 16, 24 * 16, 'viking_runestone_knotwork', 0.36);
+    this.decorManager.placeProp(62 * 16, 20 * 16, 'viking_god_totem_odin', 0.35);
+    this.decorManager.placeProp(66 * 16, 20 * 16, 'viking_god_totem_wolf', 0.35);
+    const banner = this.decorManager.placeProp(58 * 16, 26 * 16, 'viking_banner_raven_red', 0.35);
+    if (banner) this.livingWorldManager.registerBanner(banner);
 
     // Lindisfarne, Paris, Danelag and Stamford Bridge props are dynamically gated in rebuildChapterEntities()
   }
@@ -497,6 +505,7 @@ export class WorldScene extends Phaser.Scene {
     // 1. Current Chapter Mentor
     this.mentorSprite = this.add
       .sprite(mentorInfo.x * 16, mentorInfo.y * 16, mentorInfo.id, 0)
+      .setOrigin(0.5, 0.9)
       .setDepth(mentorInfo.y * 16);
     this.dynamicGroup.add(this.mentorSprite);
     this.livingWorldManager.registerMentor(this.mentorSprite);
@@ -515,7 +524,7 @@ export class WorldScene extends Phaser.Scene {
     VIKING_BUILDINGS.forEach((b) => {
       const isBuilt = gameState.builtBuildings.has(b.id);
       if (isBuilt) {
-        const img = this.decorManager.placeProp(b.x * 16, b.y * 16, b.propKey, 1.0);
+        const img = this.decorManager.placeProp(b.x * 16, b.y * 16, b.propKey, 0.6);
         if (img) this.dynamicGroup.add(img);
       } else if (b.chapter === ch) {
         // Active building site
@@ -534,30 +543,30 @@ export class WorldScene extends Phaser.Scene {
 
     // 3. Chapter-gated historical structures
     if (ch >= 4) {
-      const p1 = this.decorManager.placeProp(52 * 16, 17 * 16, 'monastery_stone_arch', 1.0);
-      const p2 = this.decorManager.placeProp(54 * 16, 18 * 16, 'monastery_golden_altar', 1.0);
-      const p3 = this.decorManager.placeProp(48 * 16, 18 * 16, 'viking_weapon_rack_spears', 0.9);
+      const p1 = this.decorManager.placeProp(52 * 16, 17 * 16, 'monastery_stone_arch', 0.5);
+      const p2 = this.decorManager.placeProp(54 * 16, 18 * 16, 'monastery_golden_altar', 0.35);
+      const p3 = this.decorManager.placeProp(48 * 16, 18 * 16, 'viking_weapon_rack_spears', 0.35);
       if (p1) this.dynamicGroup.add(p1);
       if (p2) this.dynamicGroup.add(p2);
       if (p3) this.dynamicGroup.add(p3);
     }
 
     if (ch >= 7) {
-      const p4 = this.decorManager.placeProp(48 * 16, 30 * 16, 'viking_cottage_gable', 1.0);
-      const p5 = this.decorManager.placeProp(52 * 16, 31 * 16, 'viking_shield_stand_rune', 1.0);
-      const p6 = this.decorManager.placeProp(44 * 16, 32 * 16, 'viking_armor_stand_chainmail', 1.0);
+      const p4 = this.decorManager.placeProp(48 * 16, 30 * 16, 'viking_cottage_gable', 0.6);
+      const p5 = this.decorManager.placeProp(52 * 16, 31 * 16, 'viking_shield_stand_rune', 0.35);
+      const p6 = this.decorManager.placeProp(44 * 16, 32 * 16, 'viking_armor_stand_chainmail', 0.35);
       if (p4) this.dynamicGroup.add(p4);
       if (p5) this.dynamicGroup.add(p5);
       if (p6) this.dynamicGroup.add(p6);
     }
 
     if (ch >= 6) {
-      const p7 = this.decorManager.placeProp(32 * 16, 68 * 16, 'paris_fortress_gate', 1.0);
-      const p8 = this.decorManager.placeProp(36 * 16, 66 * 16, 'paris_stone_tower', 1.0);
-      const p9 = this.decorManager.placeProp(28 * 16, 68 * 16, 'paris_stone_wall', 1.0);
-      const p10 = this.decorManager.placeProp(38 * 16, 70 * 16, 'siege_catapult_wood', 0.95);
-      const p11 = this.decorManager.placeProp(30 * 16, 71 * 16, 'battlefield_wooden_stakes', 0.95);
-      const p12 = this.decorManager.placeProp(35 * 16, 72 * 16, 'viking_treasure_chest_danegeld', 0.95);
+      const p7 = this.decorManager.placeProp(32 * 16, 68 * 16, 'paris_fortress_gate', 0.6);
+      const p8 = this.decorManager.placeProp(36 * 16, 66 * 16, 'paris_stone_tower', 0.6);
+      const p9 = this.decorManager.placeProp(28 * 16, 68 * 16, 'paris_stone_wall', 0.6);
+      const p10 = this.decorManager.placeProp(38 * 16, 70 * 16, 'siege_catapult_wood', 0.4);
+      const p11 = this.decorManager.placeProp(30 * 16, 71 * 16, 'battlefield_wooden_stakes', 0.35);
+      const p12 = this.decorManager.placeProp(35 * 16, 72 * 16, 'viking_treasure_chest_danegeld', 0.35);
       if (p7) this.dynamicGroup.add(p7);
       if (p8) this.dynamicGroup.add(p8);
       if (p9) this.dynamicGroup.add(p9);
@@ -567,8 +576,8 @@ export class WorldScene extends Phaser.Scene {
     }
 
     if (ch >= 12) {
-      const p13 = this.decorManager.placeProp(42 * 16, 74 * 16, 'bridge_timber_crossing', 1.0);
-      const p14 = this.decorManager.placeProp(46 * 16, 75 * 16, 'viking_camp_tent', 0.95);
+      const p13 = this.decorManager.placeProp(42 * 16, 74 * 16, 'bridge_timber_crossing', 0.6);
+      const p14 = this.decorManager.placeProp(46 * 16, 75 * 16, 'viking_camp_tent', 0.5);
       if (p13) this.dynamicGroup.add(p13);
       if (p14) this.dynamicGroup.add(p14);
     }
@@ -649,6 +658,7 @@ export class WorldScene extends Phaser.Scene {
     this.livingWorldManager.update(delta, this.player.x, this.player.y, isMoving);
     this.wildlifeManager.update(time, delta, this.player.x, this.player.y);
     this.updateSingleProximityBadge();
+    this.updateQuestCompass();
   }
 
   private handlePlayerMovement(delta: number): boolean {
@@ -726,7 +736,7 @@ export class WorldScene extends Phaser.Scene {
     } else {
       const pKey = gameState.gender === 'female' ? 'player_astrid' : 'player_ragnar';
       this.player.stop();
-      this.player.setFrame(this.facing === 'down' ? 0 : this.facing === 'right' ? 4 : this.facing === 'up' ? 8 : 12);
+      this.player.setFrame(this.facing === 'down' ? 0 : this.facing === 'right' ? 17 : this.facing === 'up' ? 34 : 51);
     }
 
     // Interaction key [E] check
@@ -803,6 +813,95 @@ export class WorldScene extends Phaser.Scene {
         sound.playCraftSuccess();
         ui.showToast(`+1 ${VIKING_ITEMS[t.itemId].name} gesammelt!`, 'success');
       }
+    }
+  }
+
+  // =========================================================================
+  // LIVE QUEST-RADAR & ZIEL-KOMPASS (Section 1.3)
+  // =========================================================================
+  public updateQuestCompass(): void {
+    if (!this.player) return;
+
+    const ch = gameState.chapter;
+    const objs = gameState.chapterObjectives[ch] || [false, false, false, false];
+    const mentorInfo = this.mentorCoords[ch] || this.mentorCoords[1];
+
+    let targetX = mentorInfo.x * 16;
+    let targetY = mentorInfo.y * 16;
+    let targetName = mentorInfo.name.split(' (')[0];
+
+    if (!objs[0]) {
+      // 1. Need to speak with mentor
+      targetX = mentorInfo.x * 16;
+      targetY = mentorInfo.y * 16;
+      targetName = mentorInfo.name.split(' (')[0];
+    } else if (!objs[1]) {
+      // 2. Resource / crafting task: find nearest resource hotspot
+      let nearestDist = 999999;
+      for (const t of this.targets) {
+        if (t.kind === 'resource') {
+          const d = Math.hypot(t.x - this.player.x, t.y - this.player.y);
+          if (d < nearestDist) {
+            nearestDist = d;
+            targetX = t.x;
+            targetY = t.y;
+            targetName = t.name;
+          }
+        }
+      }
+    } else if (!objs[2]) {
+      // 3. Building project
+      const bPlot = this.targets.find((t) => t.kind === 'building_plot');
+      if (bPlot) {
+        targetX = bPlot.x;
+        targetY = bPlot.y;
+        targetName = bPlot.name;
+      } else {
+        targetX = mentorInfo.x * 16;
+        targetY = mentorInfo.y * 16;
+        targetName = mentorInfo.name.split(' (')[0];
+      }
+    } else if (!objs[3]) {
+      // 4. Chapter Quiz at mentor
+      targetX = mentorInfo.x * 16;
+      targetY = mentorInfo.y * 16;
+      targetName = `${mentorInfo.name.split(' (')[0]} (Quiz)`;
+    } else {
+      // All 4 completed: prompt to advance
+      if (ch < 12) {
+        const nextMentor = this.mentorCoords[ch + 1];
+        if (nextMentor) {
+          targetX = nextMentor.x * 16;
+          targetY = nextMentor.y * 16;
+          targetName = `${nextMentor.name.split(' (')[0]}`;
+        } else {
+          targetName = 'Zeitstrahl (Taste Z)';
+        }
+      } else {
+        targetName = 'Alle 12 Kapitel gemeistert!';
+      }
+    }
+
+    const dx = targetX - this.player.x;
+    const dy = targetY - this.player.y;
+    const distPx = Math.hypot(dx, dy);
+    const meters = Math.max(2, Math.round(distPx / 8));
+    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+    let dirStr = '→ Osten';
+    if (angle >= -112.5 && angle < -67.5) dirStr = '↑ Norden';
+    else if (angle >= -67.5 && angle < -22.5) dirStr = '↗ Nordosten';
+    else if (angle >= -22.5 && angle < 22.5) dirStr = '→ Osten';
+    else if (angle >= 22.5 && angle < 67.5) dirStr = '↘ Südosten';
+    else if (angle >= 67.5 && angle < 112.5) dirStr = '↓ Süden';
+    else if (angle >= 112.5 && angle < 157.5) dirStr = '↙ Südwesten';
+    else if (angle >= -157.5 && angle < -112.5) dirStr = '↖ Nordwesten';
+    else dirStr = '← Westen';
+
+    if (distPx < 32) {
+      this.currentCompassText = `📍 Ziel direkt vor dir: ${targetName} (drücke E)`;
+    } else {
+      this.currentCompassText = `🧭 ${targetName}: ${dirStr} (${meters} m)`;
     }
   }
 }

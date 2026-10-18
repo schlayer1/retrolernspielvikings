@@ -17,6 +17,7 @@ export interface SaveData {
   role: PlayerRole;
   discoveredRelics: string[];
   lexiconRead: string[];
+  unlockedLexicon?: string[];
   playerName: string;
   playTimeSeconds: number;
   walkedDistanceMeters?: number;

@@ -33,6 +33,7 @@ export class UIScene extends Phaser.Scene {
 
   private lexiconSearch = '';
   private lexiconCategory = 'Alle';
+  private lexSelected = 'karl_bauer';
 
   // Dialog & Quiz state
   private dialogLines: string[] = [];
@@ -207,27 +208,40 @@ export class UIScene extends Phaser.Scene {
     const completedCount = objs.filter(Boolean).length;
     const isDone = completedCount === 4;
 
+    const world = this.scene.get('World') as any;
+    const compassText = world && world.currentCompassText ? world.currentCompassText : '🧭 Kompass aktiv...';
+
+    // Current task description
+    let activeTaskText = `Sprich mit ${chData.mentorName.split(' (')[0]} (E).`;
+    if (objs[0] && !objs[1]) {
+      activeTaskText = `Sammle Rohstoffe am Fjord oder stelle Ausrüstung her (C).`;
+    } else if (objs[0] && objs[1] && !objs[2]) {
+      activeTaskText = `Errichte das Kapitel-Bauvorhaben am Bauplatz (B).`;
+    } else if (objs[0] && objs[1] && objs[2] && !objs[3]) {
+      activeTaskText = `Meistere das didaktische Kapitel-Quiz bei ${chData.mentorName.split(' (')[0]} (E).`;
+    } else if (isDone) {
+      activeTaskText = `Kapitel gemeistert! Reise weiter über den Zeitstrahl (Z).`;
+    }
+
     this.questBox.innerHTML = `
       <div class="quest-header">
-        <span class="quest-title-text">⚔️ K${gameState.chapter}-Aufgabe</span>
-        <span class="quest-counter ${isDone ? 'quest-done' : ''}">${completedCount} / 4 Erfüllt</span>
+        <span class="quest-title-text">${chData.title} · ${chData.year}</span>
+        <span class="quest-counter ${isDone ? 'quest-done' : ''}">${completedCount} / 4</span>
       </div>
-      <div class="quest-desc">${chData.questDescription}</div>
-      <div class="quest-objectives-list">
-        <div class="quest-item ${objs[0] ? 'done' : ''}">
-          ${objs[0] ? '✓' : '○'} 1. Mentor konsultieren (${chData.mentorName})
-        </div>
-        <div class="quest-item ${objs[1] ? 'done' : ''}">
-          ${objs[1] ? '✓' : '○'} 2. Rohstoffe sammeln oder Gegenstand herstellen
-        </div>
-        <div class="quest-item ${objs[2] ? 'done' : ''}">
-          ${objs[2] ? '✓' : '○'} 3. Kapitel-Bauvorhaben / Station errichten [B]
-        </div>
-        <div class="quest-item ${objs[3] ? 'done' : ''}">
-          ${objs[3] ? '✓' : '○'} 4. Didaktisches Kapitel-Quiz meistern
-        </div>
-      </div>
+      <div class="quest-task-line"><b>Aufgabe:</b> ${activeTaskText}</div>
+      <div class="quest-divider"></div>
+      <div id="hud-compass" class="quest-compass">${compassText}</div>
     `;
+  }
+
+  update(): void {
+    const world = this.scene.get('World') as any;
+    if (world && world.currentCompassText) {
+      const compassEl = document.getElementById('hud-compass');
+      if (compassEl && compassEl.textContent !== world.currentCompassText) {
+        compassEl.textContent = world.currentCompassText;
+      }
+    }
   }
 
   // =========================================================================
@@ -758,7 +772,7 @@ export class UIScene extends Phaser.Scene {
           <div class="pause-tile-card">
             <div class="tile-icon">📖</div>
             <div class="tile-title">5. Historisches Glossar</div>
-            <div class="tile-main-stat">${gameState.lexiconRead.size} von 27 studiert</div>
+            <div class="tile-main-stat">${gameState.unlockedLexicon.size} von 27 entdeckt</div>
             <button class="btn-sub" style="margin-top: 4px;" onclick="window.__VIK_UI__.openLexicon()">Lexikon öffnen [L]</button>
           </div>
 
@@ -978,86 +992,111 @@ export class UIScene extends Phaser.Scene {
   }
 
   // =========================================================================
-  // 9. HISTORISCHES FACHLEXIKON [L]
+  // 9. HISTORISCHES FACHLEXIKON [L] (Progressive Unlocking)
   // =========================================================================
   public openLexiconDirect(termId: string): void {
-    this.lexiconSearch = termId;
+    this.lexSelected = termId;
     this.openLexicon();
   }
 
+  public selectLexiconEntry(termId: string): void {
+    this.lexSelected = termId;
+    this.openLexicon();
+  }
+
+  public speakLexicon(id: string): void {
+    const entry = LEXICON_ENTRIES.find((e) => e.id === id);
+    if (!entry) return;
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(`${entry.term}. ${entry.definition}. Merksatz: ${entry.merksatz}`);
+    u.lang = 'de-DE';
+    u.rate = 0.96;
+    window.speechSynthesis.speak(u);
+  }
+
   public openLexicon(): void {
-    const categories = ['Alle', 'Siedlung & Alltag', 'Technik & Seefahrt', 'Handel & Kultur', 'Recht & Glaube', 'Staaten & Wandel'];
-
-    let filtered = LEXICON_ENTRIES;
-    if (this.lexiconCategory !== 'Alle') {
-      filtered = filtered.filter((e) => e.category === this.lexiconCategory);
-    }
-    if (this.lexiconSearch.trim()) {
-      const q = this.lexiconSearch.toLowerCase().trim();
-      filtered = filtered.filter(
-        (e) => e.term.toLowerCase().includes(q) || e.id.toLowerCase().includes(q) || e.definition.toLowerCase().includes(q),
-      );
+    if (!LEXICON_ENTRIES.some((e) => e.id === this.lexSelected)) {
+      this.lexSelected = LEXICON_ENTRIES[0].id;
     }
 
-    filtered.forEach((e) => gameState.lexiconRead.add(e.id));
+    const current = LEXICON_ENTRIES.find((e) => e.id === this.lexSelected) || LEXICON_ENTRIES[0];
+    const isKnown = gameState.unlockedLexicon.has(current.id);
 
-    let catButtons = categories
-      .map(
-        (c) => `
-        <button class="lex-cat-btn ${this.lexiconCategory === c ? 'active' : ''}" onclick="window.__VIK_UI__.filterLexiconCategory('${c}')">
-          ${c}
-        </button>
-      `,
-      )
-      .join('');
+    if (isKnown) {
+      gameState.lexiconRead.add(current.id);
+    }
 
-    let entriesHtml = filtered.length
-      ? filtered
-          .map(
-            (e) => `
-          <div class="lex-entry-card">
-            <div style="display: flex; gap: 12px; align-items: flex-start;">
-              <div class="lex-icon-box">
-                <img src="${e.icon}" style="width: 28px; height: 28px; image-rendering: pixelated;" />
-              </div>
-              <div style="flex-grow: 1;">
-                <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                  <span class="lex-term-title">${e.term}</span>
-                  <span class="lex-term-category">${e.category}</span>
-                </div>
-                <div class="lex-term-def">${e.definition}</div>
-                <div class="lex-term-merksatz">📌 <b>Merksatz:</b> ${e.merksatz}</div>
-              </div>
-            </div>
+    const unlockedCount = gameState.unlockedLexicon.size;
+    const totalCount = LEXICON_ENTRIES.length;
+
+    const listHtml = LEXICON_ENTRIES.map((e) => {
+      const known = gameState.unlockedLexicon.has(e.id);
+      const active = e.id === this.lexSelected ? 'active' : '';
+      const locked = known ? '' : 'locked';
+      return `
+        <button class="lex-item-btn ${active} ${locked}" onclick="window.__VIK_UI__.selectLexiconEntry('${e.id}')">
+          ${
+            known
+              ? `<img class="pixel-icon" src="${e.icon}" alt="" style="width:20px;height:20px;image-rendering:pixelated;" />`
+              : `<span style="font-size:15px;width:20px;text-align:center;">🔒</span>`
+          }
+          <div style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            ${e.term}
           </div>
-        `,
-          )
-          .join('')
-      : '<div style="color: #cbd5e1; font-size: 13px; text-align: center; padding: 20px;">Kein passender Fachbegriff gefunden.</div>';
+        </button>
+      `;
+    }).join('');
+
+    const detailHtml = isKnown
+      ? `
+        <div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid rgba(212,175,55,0.3);padding-bottom:12px;">
+          <img class="pixel-icon" src="${current.icon}" alt="${current.term}" style="width:48px;height:48px;image-rendering:pixelated;" />
+          <div>
+            <div style="font-size:12px;font-weight:800;color:#f59e0b;text-transform:uppercase;">${current.category}</div>
+            <h3 style="margin:2px 0 0 0;font-size:20px;color:#fef3c7;font-family:'Cinzel',serif;">${current.term}</h3>
+          </div>
+        </div>
+        <div style="font-size:15px;line-height:1.65;color:#e2e8f0;margin-top:14px;">
+          ${current.definition}
+        </div>
+        <div class="lex-term-merksatz" style="margin-top:14px;background:#1e293b;padding:12px;border-radius:8px;border:1px solid #10b981;">
+          📌 <b>Geschichts-Merksatz:</b> ${current.merksatz}
+        </div>
+        <div style="margin-top:auto;padding-top:16px;display:flex;gap:8px;">
+          <button class="btn-action" style="background:#b45309;color:#fff;" onclick="window.__VIK_UI__.speakLexicon('${current.id}')">🔊 Eintrag vorlesen</button>
+        </div>
+      `
+      : `
+        <div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid rgba(212,175,55,0.3);padding-bottom:12px;">
+          <span style="font-size:38px;">🔒</span>
+          <div>
+            <div style="font-size:12px;font-weight:800;color:#94a3b8;text-transform:uppercase;">${current.category}</div>
+            <h3 style="margin:2px 0 0 0;font-size:19px;color:#cbd5e1;font-family:'Cinzel',serif;">${current.term} (Noch nicht entdeckt)</h3>
+          </div>
+        </div>
+        <div class="lex-hint-box">
+          <strong>💡 Such-Tipp – Wie schalte ich diesen Eintrag frei?</strong>
+          <div style="margin-top:8px;font-size:14px;line-height:1.55;color:#fef3c7;">
+            ${current.unlockHint}
+          </div>
+        </div>
+      `;
 
     const html = `
-      <div class="modal-card" style="max-width: 850px;">
+      <div class="modal-card" style="max-width: 900px;">
         <div class="modal-header-row">
-          <h2>📖 Historisches Fachlexikon (${LEXICON_ENTRIES.length} Begriffe) [L]</h2>
-          <button class="modal-close-btn" onclick="window.__VIK_UI__.closeModal()">&times;</button>
+          <h2>📖 Lexikon der Wikingerzeit (${unlockedCount} / ${totalCount} entdeckt) [L]</h2>
+          <button class="modal-close-btn" onclick="window.__VIK_UI__.closeModal()">&times; Schließen (Esc)</button>
         </div>
-        <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">${catButtons}</div>
-        <input type="text" class="lex-search-input" placeholder="Begriff suchen (z.B. Langhaus, Klinkerbauweise, Althing, Sonnenstein)..." value="${this.lexiconSearch}" oninput="window.__VIK_UI__.searchLexicon(this.value)" />
-        <div class="lex-entries-list">${entriesHtml}</div>
+        <div class="lex-layout">
+          <div class="lex-list">${listHtml}</div>
+          <div class="lex-detail-card">${detailHtml}</div>
+        </div>
       </div>
     `;
 
     this.setModalContent(html, 'lexicon');
-  }
-
-  public filterLexiconCategory(cat: string): void {
-    this.lexiconCategory = cat;
-    this.openLexicon();
-  }
-
-  public searchLexicon(val: string): void {
-    this.lexiconSearch = val;
-    this.openLexicon();
   }
 
   // =========================================================================

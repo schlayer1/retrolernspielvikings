@@ -226,18 +226,9 @@ export class LivingWorldManager {
   // ---------------------------------------------------------------------------
   public registerMentor(sprite: Phaser.GameObjects.Sprite | null): void {
     if (!sprite) return;
+    sprite.setOrigin(0.5, 0.9);
     this.mentorSprites.push(sprite);
     this.mentorLookTimers.set(sprite, 4000 + Math.random() * 4000);
-
-    // Subtle 1-pixel breathing squash
-    this.scene.tweens.add({
-      targets: sprite,
-      scaleY: { from: 0.985, to: 1.0 },
-      duration: 1400 + Math.random() * 400,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    });
   }
 
   public registerPlayer(player: Phaser.GameObjects.Sprite): void {
@@ -257,25 +248,10 @@ export class LivingWorldManager {
     this.smokeTimer += delta;
     this.waterTimer += delta;
 
-    // A. Player Idle Breathing state sync
+    // A. Player Idle state sync (No scaleY squash to prevent foot jitter per Section 1.4)
     if (this.playerSprite) {
       if (playerMoving && !this.playerPrevMoving) {
-        // Player started moving: stop idle tween
-        if (this.playerIdleTween) {
-          this.playerIdleTween.stop();
-          this.playerIdleTween = null;
-        }
         this.playerSprite.setScale(1, 1);
-      } else if (!playerMoving && this.playerPrevMoving) {
-        // Player stopped moving: start subtle breathing
-        this.playerIdleTween = this.scene.tweens.add({
-          targets: this.playerSprite,
-          scaleY: { from: 0.98, to: 1.0 },
-          duration: 1200,
-          yoyo: true,
-          repeat: -1,
-          ease: 'Sine.easeInOut',
-        });
       }
       this.playerPrevMoving = playerMoving;
     }
@@ -318,7 +294,7 @@ export class LivingWorldManager {
       }
     }
 
-    // D. Mentor look-around & player-awareness
+    // D. Mentor look-around & player-awareness (17-column LPC frame standards: down=0, right=17, up=34, left=51)
     for (const mentor of this.mentorSprites) {
       if (!mentor.active) continue;
 
@@ -329,9 +305,9 @@ export class LivingWorldManager {
         const dx = playerX - mentor.x;
         const dy = playerY - mentor.y;
         if (Math.abs(dx) > Math.abs(dy)) {
-          mentor.setFrame(dx > 0 ? 4 : 12); // right or left
+          mentor.setFrame(dx > 0 ? 17 : 51); // right or left
         } else {
-          mentor.setFrame(dy > 0 ? 0 : 8); // down or up
+          mentor.setFrame(dy > 0 ? 0 : 34); // down or up
         }
       } else {
         // Intermittent look around every 6-10 seconds
@@ -339,8 +315,8 @@ export class LivingWorldManager {
         timer -= delta;
         if (timer <= 0) {
           timer = 6000 + Math.random() * 4000;
-          // Random slight turn (down or idle side)
-          const frames = [0, 4, 12];
+          // Random slight turn (down, right, left, up)
+          const frames = [0, 17, 34, 51];
           const rf = frames[Math.floor(Math.random() * frames.length)];
           mentor.setFrame(rf);
         }

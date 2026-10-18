@@ -1,5 +1,6 @@
 import { VIKING_BUILDINGS, VIKING_ITEMS, VIKING_RECIPES, VikingItemId } from '../data/items';
 import { PlayerGender, PlayerRole, SaveData, SaveManager } from './SaveManager';
+import { LEXICON_ENTRIES } from '../data/lexicon';
 
 export interface RoleDefinition {
   id: PlayerRole;
@@ -52,6 +53,7 @@ export class GameState {
   public quizPerfect = new Set<number>();
   public discoveredRelics = new Set<string>();
   public lexiconRead = new Set<string>();
+  public unlockedLexicon = new Set<string>();
   public playerX = 35 * 16;
   public playerY = 32 * 16;
   public questCompleted = false;
@@ -82,6 +84,28 @@ export class GameState {
 
   constructor() {
     this.initDefaultInventory();
+    this.checkLexiconUnlocks(false);
+  }
+
+  public checkLexiconUnlocks(notify = true): string[] {
+    const newlyUnlocked: string[] = [];
+    for (const e of LEXICON_ENTRIES) {
+      if (this.unlockedLexicon.has(e.id)) continue;
+      let shouldUnlock = false;
+      if (e.minChapter <= this.chapter) shouldUnlock = true;
+      if (e.unlockRelicId && this.discoveredRelics.has(e.unlockRelicId)) shouldUnlock = true;
+      if (e.unlockCraftId && this.craftedOnce.has(e.unlockCraftId as any)) shouldUnlock = true;
+      if (e.unlockBuildingId && this.builtBuildings.has(e.unlockBuildingId)) shouldUnlock = true;
+
+      if (shouldUnlock) {
+        this.unlockedLexicon.add(e.id);
+        newlyUnlocked.push(e.id);
+        if (notify && typeof window !== 'undefined' && (window as any).__VIK_UI__) {
+          (window as any).__VIK_UI__.showToast(`📖 Neu im Lexikon: ${e.term}`, 'gold');
+        }
+      }
+    }
+    return newlyUnlocked;
   }
 
   private initDefaultInventory(): void {
@@ -141,6 +165,7 @@ export class GameState {
 
     const cur = this.inventory[item] || 0;
     this.inventory[item] = cur + count + bonus;
+    this.checkLexiconUnlocks(true);
     this.notify();
     this.autoSave();
   }
@@ -168,7 +193,7 @@ export class GameState {
     pts += this.completedChapters.size * 150;
     pts += this.quizPerfect.size * 50;
     pts += this.discoveredRelics.size * 100;
-    pts += this.lexiconRead.size * 20;
+    pts += this.unlockedLexicon.size * 25;
     pts += this.builtBuildings.size * 75;
     pts += this.craftedOnce.size * 30;
     return pts;
@@ -210,6 +235,7 @@ export class GameState {
         this.completedChapters.add(c);
         this.chapterObjectives[c] = [true, true, true, true];
       }
+      this.checkLexiconUnlocks(false);
       this.notify();
       this.autoSave();
       return true;
@@ -232,6 +258,7 @@ export class GameState {
       role: this.role,
       discoveredRelics: Array.from(this.discoveredRelics),
       lexiconRead: Array.from(this.lexiconRead),
+      unlockedLexicon: Array.from(this.unlockedLexicon),
       playerName: this.playerName,
       playTimeSeconds: this.playTimeSeconds,
       walkedDistanceMeters: Math.floor(this.walkedDistanceMeters),
@@ -256,6 +283,7 @@ export class GameState {
     this.role = data.role || 'hofherr';
     this.discoveredRelics = new Set(data.discoveredRelics || []);
     this.lexiconRead = new Set(data.lexiconRead || []);
+    this.unlockedLexicon = new Set(data.unlockedLexicon || []);
     this.playerName = data.playerName || (this.gender === 'female' ? 'Astrid' : 'Ragnar');
     this.playTimeSeconds = data.playTimeSeconds || 0;
     this.walkedDistanceMeters = data.walkedDistanceMeters || 0;
@@ -266,6 +294,7 @@ export class GameState {
         this.chapterObjectives[c] = [true, true, true, true];
       }
     }
+    this.checkLexiconUnlocks(false);
 
     this.notify();
     return true;

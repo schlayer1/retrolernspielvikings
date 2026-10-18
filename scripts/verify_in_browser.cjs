@@ -181,6 +181,19 @@ async function main() {
     await saveScreenshot(page, 'verify_7_pause_dashboard.png');
 
     // -------------------------------------------------------------------------
+    // 8. Progressive Lexicon Modal: 2-column layout, locked entries & TTS
+    // -------------------------------------------------------------------------
+    await page.evaluate(() => {
+      const ui = window.__VIK_UI__;
+      if (ui) {
+        ui.openLexicon();
+      }
+    });
+    await sleep(800);
+
+    await saveScreenshot(page, 'verify_8_progressive_lexicon.png');
+
+    // -------------------------------------------------------------------------
     // Summary Report
     // -------------------------------------------------------------------------
     console.log('\n========================================');

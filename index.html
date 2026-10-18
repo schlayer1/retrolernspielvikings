@@ -186,7 +186,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
       }
 
       .quest-title-text {
@@ -194,6 +194,7 @@
         font-size: 12px;
         font-weight: 700;
         color: var(--amber-light);
+        line-height: 1.25;
       }
 
       .quest-counter {
@@ -209,30 +210,26 @@
         color: #fff;
       }
 
-      .quest-desc {
-        font-size: 11px;
-        color: #e2e8f0;
+      .quest-task-line {
+        font-size: 11.5px;
+        color: #f1f5f9;
         line-height: 1.35;
-        margin-bottom: 8px;
+        margin-top: 3px;
       }
 
-      .quest-objectives-list {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
+      .quest-divider {
+        margin: 6px 0 5px 0;
+        border-top: 1px solid rgba(232, 193, 112, 0.35);
       }
 
-      .quest-item {
-        font-size: 11px;
-        color: #94a3b8;
+      .quest-compass {
+        font-size: 11.5px;
+        font-weight: 700;
+        color: #ffd86b;
+        letter-spacing: 0.2px;
         display: flex;
         align-items: center;
         gap: 6px;
-      }
-
-      .quest-item.done {
-        color: #86efac;
-        text-decoration: line-through;
       }
 
       /* =====================================================
@@ -945,69 +942,84 @@
         font-weight: 700;
       }
 
-      .lex-search-input {
-        background: #0b1118;
-        border: 1px solid #ca8a04;
-        border-radius: 6px;
-        padding: 8px 12px;
-        font-size: 13px;
-        color: #fef3c7;
-        width: 100%;
-        margin-bottom: 12px;
+      .lex-layout {
+        display: grid;
+        grid-template-columns: 290px 1fr;
+        gap: 14px;
+        min-height: 440px;
+        max-height: 62dvh;
       }
 
-      .lex-entries-list {
+      @media (max-width: 720px) {
+        .lex-layout {
+          grid-template-columns: 1fr;
+          max-height: 70dvh;
+        }
+      }
+
+      .lex-list {
         display: flex;
         flex-direction: column;
+        gap: 5px;
+        max-height: 60dvh;
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+
+      .lex-item-btn {
+        display: flex;
+        align-items: center;
         gap: 8px;
-        max-height: 60vh;
+        width: 100%;
+        text-align: left;
+        padding: 8px 10px;
+        border-radius: 7px;
+        border: 1.5px solid rgba(212, 175, 55, 0.3);
+        background: #1e293b;
+        color: #f1f5f9;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .lex-item-btn:hover {
+        background: #334155;
+        border-color: #f59e0b;
+      }
+
+      .lex-item-btn.active {
+        background: #fde68a !important;
+        color: #1e293b !important;
+        border-color: #b45309 !important;
+        font-weight: 800;
+      }
+
+      .lex-item-btn.locked {
+        color: #94a3b8;
+        background: rgba(15, 23, 42, 0.6);
+        border-color: rgba(148, 163, 184, 0.2);
+        opacity: 0.88;
+      }
+
+      .lex-detail-card {
+        background: #0f172a;
+        border: 2px solid #ca8a04;
+        border-radius: 10px;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        color: #f8fafc;
         overflow-y: auto;
       }
 
-      .lex-entry-card {
-        background: #1a2332;
-        border: 1px solid rgba(212, 175, 55, 0.2);
+      .lex-hint-box {
+        margin-top: 14px;
+        background: rgba(245, 158, 11, 0.12);
+        border: 1.5px solid #d97706;
+        padding: 14px;
         border-radius: 8px;
-        padding: 10px 12px;
-      }
-
-      .lex-icon-box {
-        width: 36px;
-        height: 36px;
-        background: #0b1118;
-        border: 1px solid var(--amber-gold);
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-
-      .lex-term-title {
-        font-family: 'Cinzel', serif;
-        font-size: 13px;
-        font-weight: 700;
-        color: var(--amber-light);
-      }
-
-      .lex-term-category {
-        font-size: 10px;
-        background: #0f172a;
-        color: #94a3b8;
-        padding: 2px 6px;
-        border-radius: 4px;
-      }
-
-      .lex-term-def {
-        font-size: 12px;
-        color: #cbd5e1;
-        line-height: 1.4;
-        margin: 4px 0;
-      }
-
-      .lex-term-merksatz {
-        font-size: 11px;
-        color: #86efac;
+        color: #fde68a;
       }
 
       .timeline-phase-card {

@@ -202,11 +202,11 @@ export class BootScene extends Phaser.Scene {
   }
 
   private createWalkAnimations(key: string): void {
-    // Frame layout (16x32 in 64x128 grid: 4 columns x 4 rows)
-    // Row 0: Down (frames 0..3)
-    // Row 1: Right (frames 4..7)
-    // Row 2: Up (frames 8..11)
-    // Row 3: Left (frames 12..15)
+    // LPC Spritesheet Offset Standard (272x256 px with 16x32 frames -> 17 columns per row):
+    // Row 0: Down (frames 0..3, idle: 0)
+    // Row 1: Right (frames 17..20, idle: 17)
+    // Row 2: Up (frames 34..37, idle: 34)
+    // Row 3: Left (frames 51..54, idle: 51)
     if (!this.anims.exists(`${key}_walk_down`)) {
       this.anims.create({
         key: `${key}_walk_down`,
@@ -218,7 +218,7 @@ export class BootScene extends Phaser.Scene {
     if (!this.anims.exists(`${key}_walk_right`)) {
       this.anims.create({
         key: `${key}_walk_right`,
-        frames: this.anims.generateFrameNumbers(key, { start: 4, end: 7 }),
+        frames: this.anims.generateFrameNumbers(key, { start: 17, end: 20 }),
         frameRate: 8,
         repeat: -1,
       });
@@ -226,7 +226,7 @@ export class BootScene extends Phaser.Scene {
     if (!this.anims.exists(`${key}_walk_up`)) {
       this.anims.create({
         key: `${key}_walk_up`,
-        frames: this.anims.generateFrameNumbers(key, { start: 8, end: 11 }),
+        frames: this.anims.generateFrameNumbers(key, { start: 34, end: 37 }),
         frameRate: 8,
         repeat: -1,
       });
@@ -234,7 +234,7 @@ export class BootScene extends Phaser.Scene {
     if (!this.anims.exists(`${key}_walk_left`)) {
       this.anims.create({
         key: `${key}_walk_left`,
-        frames: this.anims.generateFrameNumbers(key, { start: 12, end: 15 }),
+        frames: this.anims.generateFrameNumbers(key, { start: 51, end: 54 }),
         frameRate: 8,
         repeat: -1,
       });
@@ -243,6 +243,27 @@ export class BootScene extends Phaser.Scene {
       this.anims.create({
         key: `${key}_idle_down`,
         frames: [{ key, frame: 0 }],
+        frameRate: 1,
+      });
+    }
+    if (!this.anims.exists(`${key}_idle_right`)) {
+      this.anims.create({
+        key: `${key}_idle_right`,
+        frames: [{ key, frame: 17 }],
+        frameRate: 1,
+      });
+    }
+    if (!this.anims.exists(`${key}_idle_up`)) {
+      this.anims.create({
+        key: `${key}_idle_up`,
+        frames: [{ key, frame: 34 }],
+        frameRate: 1,
+      });
+    }
+    if (!this.anims.exists(`${key}_idle_left`)) {
+      this.anims.create({
+        key: `${key}_idle_left`,
+        frames: [{ key, frame: 51 }],
         frameRate: 1,
       });
     }
