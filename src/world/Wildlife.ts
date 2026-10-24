@@ -36,8 +36,12 @@ const BUILDING_OBSTACLES: BoundingBox[] = [
   { minX: 42 * 16, maxX: 58 * 16, minY: 30 * 16, maxY: 42 * 16 },
   // Blót Sacred grove & Runestones (protected sacred zone)
   { minX: 58 * 16, maxX: 74 * 16, minY: 20 * 16, maxY: 38 * 16 },
-  // Deep Fjord water
+  // Haystack & Well
+  { minX: 20 * 16, maxX: 24 * 16, minY: 33 * 16, maxY: 38 * 16 },
+  { minX: 28 * 16, maxX: 32 * 16, minY: 31 * 16, maxY: 35 * 16 },
+  // Deep Fjord water & Southern River
   { minX: 0, maxX: 18 * 16, minY: 0, maxY: 40 * 16 },
+  { minX: 32 * 16, maxX: 43 * 16, minY: 50 * 16, maxY: 80 * 16 },
 ];
 
 export class WildlifeManager {
@@ -60,12 +64,12 @@ export class WildlifeManager {
     this.spawnAnimal(28 * 16, 48 * 16, 'fauna_lamb_brown', 14, 14, 0.26);
 
     // 3. Weideziegen am felsigen Hang (96x96 -> ~21px waist-high goat)
-    this.spawnAnimal(34 * 16, 56 * 16, 'fauna_goat_ram', 18, 14, 0.23);
-    this.spawnAnimal(38 * 16, 60 * 16, 'fauna_goat_ram', 20, 15, 0.23);
+    this.spawnAnimal(54 * 16, 56 * 16, 'fauna_goat_ram', 18, 14, 0.23);
+    this.spawnAnimal(58 * 16, 60 * 16, 'fauna_goat_ram', 20, 15, 0.23);
 
     // 4. Nordische Pferde auf der Hofkoppel (96x96 -> ~29px horse)
-    this.spawnAnimal(20 * 16, 32 * 16, 'fauna_horse_brown', 20, 13, 0.30);
-    this.spawnAnimal(22 * 16, 36 * 16, 'fauna_horse_saddled', 18, 12, 0.30);
+    this.spawnAnimal(18 * 16, 32 * 16, 'fauna_horse_brown', 20, 13, 0.30);
+    this.spawnAnimal(17 * 16, 37 * 16, 'fauna_horse_saddled', 18, 12, 0.30);
   }
 
   private isPointBlocked(x: number, y: number): boolean {

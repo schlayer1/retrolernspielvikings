@@ -242,6 +242,12 @@ class SoundSystem {
       setTimeout(() => this.playTone(f, 'triangle', 0.25, 0.15), idx * 100);
     });
   }
+
+  public playPet(): void {
+    [392.0, 523.25, 659.25].forEach((f, idx) => {
+      setTimeout(() => this.playTone(f, 'triangle', 0.14, 0.14), idx * 60);
+    });
+  }
 }
 
 export const sound = new SoundSystem();

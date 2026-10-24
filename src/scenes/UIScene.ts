@@ -7,6 +7,9 @@ import { VIKING_RELICS, VikingRelic } from '../data/relics';
 import { gameState, VIKING_ROLES } from '../systems/GameState';
 import { PlayerGender, PlayerRole } from '../systems/SaveManager';
 import { TouchControls } from '../ui/TouchControls';
+import { PrintSheetManager } from '../ui/PrintSheet';
+import { DilemmaModal } from '../ui/DilemmaModal';
+import { VIKING_DILEMMAS } from '../data/dilemmas';
 
 export type ModalType =
   | 'none'
@@ -20,11 +23,13 @@ export type ModalType =
   | 'lexicon'
   | 'timeline'
   | 'certificate'
-  | 'pause';
+  | 'pause'
+  | 'dilemma';
 
 export class UIScene extends Phaser.Scene {
   public touchControls!: TouchControls;
   private activeModal: ModalType = 'start';
+  private dilemmaModal!: DilemmaModal;
   private uiRoot!: HTMLDivElement;
   private hudHeader!: HTMLDivElement;
   private questBox!: HTMLDivElement;
@@ -51,6 +56,7 @@ export class UIScene extends Phaser.Scene {
     (window as any).__VIK_UI__ = this;
     (window as any).__GERM_UI__ = this;
     this.initDOMStructure();
+    this.dilemmaModal = new DilemmaModal();
     this.touchControls = new TouchControls((key) => this.handleShortcutKey(key));
     this.registerKeyboardShortcuts();
 
@@ -148,6 +154,9 @@ export class UIScene extends Phaser.Scene {
       case 'U':
         this.openCertificate();
         break;
+      case 'R':
+        this.openDilemma();
+        break;
       case 'M':
         const muted = sound.toggleBGMMute();
         this.showToast(muted ? '🔇 Musik stummgeschaltet' : '🎵 Musik eingeschaltet', 'info');
@@ -195,6 +204,7 @@ export class UIScene extends Phaser.Scene {
           <button class="hud-btn" onclick="window.__VIK_UI__.handleShortcutKey('B')" title="Bauten [B]">🏛️ [B]</button>
           <button class="hud-btn" onclick="window.__VIK_UI__.handleShortcutKey('L')" title="Fachlexikon [L]">📖 [L]</button>
           <button class="hud-btn" onclick="window.__VIK_UI__.handleShortcutKey('Z')" title="Zeitstrahl [Z]">⏳ [Z]</button>
+          <button class="hud-btn" onclick="window.__VIK_UI__.handleShortcutKey('R')" title="Thing & Dilemma [R]">⚖️ [R]</button>
           <button class="hud-btn" onclick="window.__VIK_UI__.handleShortcutKey('U')" title="Geschichtsdiplom [U]">📜 [U]</button>
           <button class="hud-btn" onclick="window.__VIK_UI__.handleShortcutKey('P')" title="Chronisten-Pause [P]">⚙️ [P]</button>
         </div>
@@ -795,9 +805,12 @@ export class UIScene extends Phaser.Scene {
 
         <div class="pause-footer-controls">
           <div class="pause-controls-keymap">
-            ⌨️ <b>Tastatur:</b> WASD / Pfeile: Bewegen &bull; [E]: Interagieren &bull; [I]: Beutel &bull; [C]: Handwerk &bull; [B]: Bauten &bull; [Z]: Zeitstrahl &bull; [U]: Diplom &bull; [M]: Musik &bull; [P/ESC]: Schließen
+            ⌨️ <b>Tastatur:</b> WASD / Pfeile: Bewegen &bull; [E]: Interagieren &bull; [I]: Beutel &bull; [C]: Handwerk &bull; [B]: Bauten &bull; [Z]: Zeitstrahl &bull; [R]: Thing/Dilemma &bull; [U]: Diplom &bull; [M]: Musik &bull; [P/ESC]: Schließen
           </div>
-          <button class="btn-primary" onclick="window.__VIK_UI__.closeModal()">Weiterspielen ➔</button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-sub" onclick="window.__VIK_UI__.triggerHefterPrint()">🖨️ Hefterblatt drucken (A4)</button>
+            <button class="btn-primary" onclick="window.__VIK_UI__.closeModal()">Weiterspielen ➔</button>
+          </div>
         </div>
       </div>
     `;
@@ -1205,11 +1218,50 @@ export class UIScene extends Phaser.Scene {
           <div style="width: 60px; height: 60px; border: 2px dashed #ca8a04; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px;">
             🛡️
           </div>
-          <button class="btn-primary" onclick="window.__VIK_UI__.closeModal()">Zurück zum Hof</button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-sub" onclick="window.__VIK_UI__.triggerHefterPrint()">🖨️ Hefterblatt drucken (A4)</button>
+            <button class="btn-primary" onclick="window.__VIK_UI__.closeModal()">Zurück zum Hof</button>
+          </div>
         </div>
       </div>
     `;
 
     this.setModalContent(html, 'certificate');
+  }
+
+  public triggerHefterPrint(): void {
+    const relicsData = VIKING_RELICS.map((r) => ({
+      title: r.name,
+      note: r.historicalContext || r.significance || 'Bedeutender archäologischer Leitfund der Wikingerzeit.'
+    }));
+    const keyTerms = Object.values(LEXICON_ENTRIES).slice(0, 3).map((t) => ({
+      term: t.term,
+      definition: t.merksatz ? `${t.definition} (📌 ${t.merksatz})` : t.definition
+    }));
+    PrintSheetManager.triggerPrint({
+      schoolName: 'Staatliche Regelschule Heimbürgeschule Kahla',
+      epochTitle: 'Die Wikinger: Seefahrt, Handel, Glaube & Gesetz (780–1066 n. Chr.)',
+      playerName: gameState.playerName,
+      hefterCode: gameState.generateHefterCode(),
+      rankTitle: `${gameState.getRankTitle()} (${gameState.getChronistPoints()} Pkt. · ${gameState.discoveredRelics.size}/5 Leitfunde)`,
+      relics: relicsData,
+      dilemmaSummary: gameState.dilemmaSummary || undefined,
+      keyTerms
+    });
+  }
+
+  public openDilemma(): void {
+    const d = VIKING_DILEMMAS[0];
+    if (!d) return;
+    this.activeModal = 'dilemma';
+    this.dilemmaModal.open(d, (opt) => {
+      gameState.storyFlags[opt.storyFlag] = true;
+      gameState.dilemmaSummary = `${d.conflictTitle}: ${opt.title} – ${opt.argumentText}`;
+      for (const [k, v] of Object.entries(opt.rewards)) {
+        if (v && v > 0) gameState.addItem(k as VikingItemId, v);
+      }
+      this.showToast(`⚖️ Spruch am Lögberg verkündet: ${opt.title}`, 'success');
+      this.closeModal();
+    });
   }
 }

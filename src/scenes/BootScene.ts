@@ -15,7 +15,11 @@ export class BootScene extends Phaser.Scene {
     this.load.image('cow', '/assets/gfx/cow.png');
     this.load.image('goat', '/assets/gfx/goat.png');
 
-    // 2. Player Characters (16x32 Spritesheets)
+    // 2. Player Characters (16x32 Spritesheets) & Companion
+    this.load.spritesheet('dog_shepherd', '/assets/fauna/dog_shepherd.png', {
+      frameWidth: 32,
+      frameHeight: 32,
+    });
     this.load.spritesheet('player_ragnar', '/assets/gfx/npcs/player_ragnar.png', {
       frameWidth: 16,
       frameHeight: 32,
@@ -195,6 +199,50 @@ export class BootScene extends Phaser.Scene {
       'npc_olav_kyrre',
     ];
     mentorSheets.forEach((id) => this.createWalkAnimations(id));
+
+    // Secret of Evermore Companion Animations (dog-shepherd)
+    if (!this.anims.exists('dog-shepherd-idle')) {
+      this.anims.create({
+        key: 'dog-shepherd-idle',
+        frames: [{ key: 'dog_shepherd', frame: 0 }],
+        frameRate: 1,
+      });
+      this.anims.create({
+        key: 'dog-shepherd-walk-down',
+        frames: this.anims.generateFrameNumbers('dog_shepherd', { start: 0, end: 3 }),
+        frameRate: 6,
+        repeat: -1,
+      });
+      this.anims.create({
+        key: 'dog-shepherd-walk-right',
+        frames: this.anims.generateFrameNumbers('dog_shepherd', { start: 4, end: 7 }),
+        frameRate: 6,
+        repeat: -1,
+      });
+      this.anims.create({
+        key: 'dog-shepherd-walk-up',
+        frames: this.anims.generateFrameNumbers('dog_shepherd', { start: 8, end: 11 }),
+        frameRate: 6,
+        repeat: -1,
+      });
+      this.anims.create({
+        key: 'dog-shepherd-sniff',
+        frames: this.anims.generateFrameNumbers('dog_shepherd', { start: 12, end: 15 }),
+        frameRate: 5,
+        repeat: -1,
+      });
+      this.anims.create({
+        key: 'dog-shepherd-sit',
+        frames: [{ key: 'dog_shepherd', frame: 12 }],
+        frameRate: 1,
+      });
+      this.anims.create({
+        key: 'dog-shepherd-wag',
+        frames: this.anims.generateFrameNumbers('dog_shepherd', { start: 12, end: 15 }),
+        frameRate: 8,
+        repeat: -1,
+      });
+    }
 
     // Transition to World and UI
     this.scene.start('World');

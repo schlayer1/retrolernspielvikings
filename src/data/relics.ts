@@ -50,8 +50,8 @@ export const VIKING_RELICS: VikingRelic[] = [
     year: 'ca. 715–793 n. Chr.',
     findLocation: 'Kloster-Scriptorium auf Holy Island',
     icon: '/assets/icons/relic_lindisfarne_gospels.png',
-    x: 52,
-    y: 20,
+    x: 56,
+    y: 21,
     minChapter: 4,
     historicalContext:
       'Dieses meisterhafte illuminierte Evangelienbuch wurde von Bischof Eadfrith von Lindisfarne auf feinstem Kalbspergament gemalt. Beim verheerenden Wikingerüberfall 793 konnte die unschätzbare Handschrift von den fliehenden Mönchen gerettet und über Jahrhunderte bewahrt werden.',
@@ -94,7 +94,7 @@ export const VIKING_RELICS: VikingRelic[] = [
     year: 'ca. 982 n. Chr.',
     findLocation: 'Navigations-Peilstand am Eriksfjord',
     icon: '/assets/icons/relic_sonnenstein.png',
-    x: 20,
+    x: 21,
     y: 42,
     minChapter: 10,
     historicalContext:

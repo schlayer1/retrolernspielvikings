@@ -7,6 +7,8 @@ import { gameState } from '../systems/GameState';
 import { WorldDecorManager } from '../world/decor';
 import { WildlifeManager } from '../world/Wildlife';
 import { LivingWorldManager } from '../world/LivingWorldManager';
+import { ChapterBanner } from '../ui/ChapterBanner';
+import { CompanionManager } from '../world/Companion';
 
 interface InteractiveTarget {
   id: string;
@@ -45,9 +47,12 @@ export class WorldScene extends Phaser.Scene {
   private decorManager!: WorldDecorManager;
   private wildlifeManager!: WildlifeManager;
   private livingWorldManager!: LivingWorldManager;
+  private chapterBanner!: ChapterBanner;
+  private companionManager!: CompanionManager;
   private stepTimer = 0;
   private facing: 'down' | 'up' | 'left' | 'right' = 'down';
   private bakedGroundEpoch = -1;
+  private lastBannerChapter = -1;
   private groundImage?: Phaser.GameObjects.Image;
   private sunlightOverlay?: Phaser.GameObjects.Rectangle;
 
@@ -134,10 +139,47 @@ export class WorldScene extends Phaser.Scene {
 
     this.initDOMLabelLayer();
 
+    this.chapterBanner = new ChapterBanner();
+    this.lastBannerChapter = gameState.chapter;
+    const chDef = CHAPTERS.find((c) => c.id === gameState.chapter);
+    if (chDef) {
+      this.chapterBanner.show({
+        chapterNumber: gameState.chapter,
+        title: chDef.title,
+        subtitle: `${chDef.year} · ${chDef.subtitle}`
+      });
+    }
+
+    this.companionManager = new CompanionManager(this, {
+      key: 'dog_shepherd',
+      animPrefix: 'dog-shepherd',
+      name: 'Fenrir',
+      historicalBreed: 'Nordischer Fjordhund',
+      unlockedChapter: 1
+    });
+    if (gameState.chapter >= 1) {
+      this.companionManager.unlock(gameState.playerX - 24, gameState.playerY);
+    }
+
     // Subscribe to state changes (chapter progress, building construction)
     gameState.subscribe(() => {
+      if (gameState.chapter !== this.lastBannerChapter) {
+        this.lastBannerChapter = gameState.chapter;
+        const cDef = CHAPTERS.find((c) => c.id === gameState.chapter);
+        if (cDef) {
+          this.chapterBanner.show({
+            chapterNumber: gameState.chapter,
+            title: cDef.title,
+            subtitle: `${cDef.year} · ${cDef.subtitle}`
+          });
+        }
+        sound.playChapterBGM(gameState.chapter);
+      }
       this.bakeVikingTerrainTexture(gameState.chapter);
       this.rebuildChapterEntities();
+      if (gameState.chapter >= 1) {
+        this.companionManager?.unlock(this.player.x - 24, this.player.y);
+      }
     });
 
     // Start background music
@@ -325,8 +367,9 @@ export class WorldScene extends Phaser.Scene {
             let rgb: [number, number, number];
 
             if (isWater) {
-              // Handled by dynamic water overlay in buildFjordAndRivers()
-              rgb = [14, 52, 92];
+              // Deep flowing Fjord & River water
+              const wave = Math.sin(px * 0.16 + py * 0.12);
+              rgb = wave > 0.65 ? [48, 138, 198] : wave < -0.5 ? [20, 88, 148] : [26, 108, 168];
             } else if (shoreDist < 18) {
               // Sand / pebbled beach along the fjord (bx=2, by=1)
               rgb = shoreDist < 10 ? sampleBlock(a2, 2, 1, px, py) : sampleBlock(a2, 1, 0, px, py);
@@ -371,124 +414,105 @@ export class WorldScene extends Phaser.Scene {
   // WATERWAYS, FJORD & SHORELINE
   // =========================================================================
   private buildFjordAndRivers(): void {
-    const waterFrames = [
-      { x: 16, y: 16, w: 16, h: 16 }, // Official skill standard [16,16,16,16]
-    ];
-
-    for (let ty = 0; ty < this.mapH; ty++) {
-      for (let tx = 0; tx < this.mapW; tx++) {
-        if (this.isWaterTile(tx, ty)) {
-          this.add
-            .image(tx * 16 + 8, ty * 16 + 8, 'overworld')
-            .setCrop(waterFrames[0].x, waterFrames[0].y, waterFrames[0].w, waterFrames[0].h)
-            .setDepth(2);
-        }
-
-      }
-    }
+    // Water is cleanly rendered via per-pixel baked texture + LivingWorldManager shimmer
     this.livingWorldManager.initWaterEffects();
   }
 
 
   // =========================================================================
-  // SCATTER NORDIC NATURE (Oaks, Pines, Bushes, Rocks)
+  // SCATTER NORDIC NATURE (Oaks, Pines, Bushes, Rocks & Apple Tree)
   // =========================================================================
   private scatterNordicNature(): void {
-    const random = (seed: number) => {
-      const x = Math.sin(seed++) * 10000;
-      return x - Math.floor(x);
-    };
+    const seedPoints = [
+      // Northern Pine & Fir Woods
+      { x: 24, y: 10, f: 'tree_pine_1', s: 0.90 },
+      { x: 34, y: 10, f: 'tree_fir_1', s: 0.90 },
+      { x: 44, y: 10, f: 'tree_pine_2', s: 0.90 },
+      { x: 58, y: 10, f: 'tree_oak_1', s: 0.95 },
+      { x: 74, y: 12, f: 'tree_pine_1', s: 0.90 },
+      { x: 84, y: 14, f: 'tree_fir_1', s: 0.90 },
+      // Eastern Highlands
+      { x: 84, y: 28, f: 'tree_oak_1', s: 0.95 },
+      { x: 86, y: 42, f: 'tree_pine_2', s: 0.90 },
+      { x: 84, y: 58, f: 'tree_fir_1', s: 0.90 },
+      // Southern Woods
+      { x: 14, y: 66, f: 'tree_pine_1', s: 0.90 },
+      { x: 54, y: 68, f: 'tree_oak_1', s: 0.95 },
+      { x: 76, y: 70, f: 'tree_pine_2', s: 0.90 },
+    ];
 
-    let seed = 42;
-    for (let i = 0; i < 220; i++) {
-      const rx = Math.floor(random(seed++) * (this.mapW - 6)) + 3;
-      const ry = Math.floor(random(seed++) * (this.mapH - 6)) + 3;
+    seedPoints.forEach((p) => {
+      const tree = this.decorManager.placeDecor(p.x * 16, p.y * 16, p.f, p.s);
+      if (tree) this.livingWorldManager.registerFlora(tree);
 
-      if (this.isWaterTile(rx, ry)) continue;
+      const bush = this.decorManager.placeDecor((p.x + 4) * 16, (p.y + 1) * 16, 'bush_berry_red', 0.52);
+      if (bush) this.livingWorldManager.registerFlora(bush);
 
-      // Keep clear of core settlements & paths
-      const distToFarm = Math.hypot(rx - 34, ry - 30);
-      const distToGrove = Math.hypot(rx - 64, ry - 26);
-      const distToJorvik = Math.hypot(rx - 48, ry - 32);
-      const distToParis = Math.hypot(rx - 34, ry - 48);
+      const fern = this.decorManager.placeDecor((p.x - 4) * 16, (p.y + 1) * 16, 'fern_1', 0.45);
+      if (fern) this.livingWorldManager.registerFlora(fern);
+    });
 
-      if (distToFarm < 6 || distToGrove < 5 || distToJorvik < 5 || distToParis < 5) continue;
+    // Interactive Wild Apple Tree at the sunny Fjord Farm Orchard
+    const appleTree = this.decorManager.placeDecor(32 * 16, 18 * 16, 'tree_apple', 0.95);
+    if (appleTree) this.livingWorldManager.registerFlora(appleTree);
+    this.livingWorldManager.registerResourceHotspot(32 * 16, 18 * 16);
 
-      const pick = random(seed++);
-      const px = rx * 16;
-      const py = ry * 16;
-
-      if (pick < 0.35) {
-        // High pine / fir / oak trees
-        const treeFrames = ['tree_pine_1', 'tree_pine_2', 'tree_fir_1', 'tree_oak_1'];
-        const treeFrame = treeFrames[Math.floor(random(seed++) * treeFrames.length)];
-        const spr = this.decorManager.placeDecor(px, py, treeFrame, 0.72, 0);
-        if (spr) this.livingWorldManager.registerFlora(spr);
-      } else if (pick < 0.6) {
-        // Bush / shrub
-        const bushFrames = ['bush_a', 'bush_b', 'bush_berry_red', 'bush_berry_blue'];
-        const bushFrame = bushFrames[Math.floor(random(seed++) * bushFrames.length)];
-        const spr = this.decorManager.placeDecor(px, py, bushFrame, 0.52, 0);
-        if (spr) this.livingWorldManager.registerFlora(spr);
-      } else if (pick < 0.8) {
-        // Fern / wild grass
-        const fernFrames = ['fern_1', 'fern_2', 'fern_3', 'fern_4'];
-        const fernFrame = fernFrames[Math.floor(random(seed++) * fernFrames.length)];
-        const spr = this.decorManager.placeDecor(px, py, fernFrame, 0.45, 0);
-        if (spr) this.livingWorldManager.registerFlora(spr);
-      } else {
-        // Mossy stone / pebbles
-        const rockFrames = ['rock_small_a', 'rock_small_b', 'rock_small_c', 'rock_small_d', 'rock_moss_a', 'rock_moss_b'];
-        const rockFrame = rockFrames[Math.floor(random(seed++) * rockFrames.length)];
-        const scale = rockFrame.startsWith('rock_moss_') ? 0.32 : 0.45;
-        this.decorManager.placeDecor(px, py, rockFrame, scale, 0);
-      }
-    }
+    // Scattered rocks & ferns
+    const rocks = [
+      { x: 18, y: 14, f: 'rock_moss_a', s: 0.35 },
+      { x: 48, y: 14, f: 'rock_small_a', s: 0.45 },
+      { x: 74, y: 24, f: 'rock_moss_b', s: 0.35 },
+      { x: 78, y: 36, f: 'rock_small_b', s: 0.45 },
+      { x: 20, y: 54, f: 'rock_moss_a', s: 0.35 },
+      { x: 58, y: 56, f: 'rock_small_c', s: 0.45 },
+    ];
+    rocks.forEach((r) => {
+      this.decorManager.placeDecor(r.x * 16, r.y * 16, r.f, r.s);
+    });
   }
 
   // =========================================================================
-  // STATIC BUILDINGS, LANDMARKS & STRUCTURES
+  // STATIC BUILDINGS, LANDMARKS & STRUCTURES (3-Tier Scale Hierarchy)
   // =========================================================================
   private buildStaticVikingWorld(): void {
     // --- 1. ASTRID'S FJORD FARM & VILLAGE (K1 & K3) ---
-    // Great Thatched Longhouse
+    // Great Thatched Longhouse (Tier 1: 96x189 * 0.65 = 62x123 px)
     this.decorManager.placeProp(34 * 16, 26 * 16, 'viking_longhouse_thatched', 0.65);
-    // Huts and sheds around farm
-    this.decorManager.placeProp(26 * 16, 28 * 16, 'viking_cottage_gable', 0.6);
-    this.decorManager.placeProp(42 * 16, 26 * 16, 'viking_round_hut', 0.6);
-    this.decorManager.placeProp(38 * 16, 32 * 16, 'viking_shed_workshop', 0.6);
-    // Village Well & Wood piles (Calibrated proportional sizes)
-    this.decorManager.placeProp(30 * 16, 33 * 16, 'viking_village_well', 0.32);
-    this.decorManager.placeProp(40 * 16, 34 * 16, 'viking_wood_pile_stacked', 0.34);
-    this.decorManager.placeProp(42 * 16, 34 * 16, 'viking_chopping_block', 0.5);
-    this.decorManager.placeProp(24 * 16, 36 * 16, 'viking_haystack_large', 0.38);
-    // Hearth Fire & Roasting Boar
-    this.decorManager.placeProp(34 * 16, 32 * 16, 'viking_spit_roast_campfire', 0.3);
+    // Huts and sheds around farm (Tier 1: 96x96 * 0.85 = 82x82 px)
+    this.decorManager.placeProp(25 * 16, 28 * 16, 'viking_cottage_gable', 0.85);
+    this.decorManager.placeProp(42 * 16, 28 * 16, 'viking_round_hut', 0.82);
+    this.decorManager.placeProp(39 * 16, 33 * 16, 'viking_shed_workshop', 0.60);
+    // Village Well & Haystack (Tier 2: 30-55 px)
+    this.decorManager.placeProp(30 * 16, 33 * 16, 'viking_village_well', 0.36);
+    this.decorManager.placeProp(22 * 16, 36 * 16, 'viking_haystack_large', 0.38);
+    // Small Props (Tier 3: 14-22 px)
+    this.decorManager.placeProp(43 * 16, 34 * 16, 'viking_wood_pile_stacked', 0.22);
+    this.decorManager.placeProp(45 * 16, 34 * 16, 'viking_chopping_block', 0.36);
+    // Hearth Fire & Roasting Boar (Tier 2: 31x31 px)
+    this.decorManager.placeProp(34 * 16, 32 * 16, 'viking_spit_roast_campfire', 0.32);
     this.livingWorldManager.registerFireSource(34 * 16, 32 * 16, true, 26, 0xffa533);
 
     // --- 2. FJORD SHORE & SHIPYARD (K3) ---
-    // Wooden Harbor Pier
-    this.decorManager.placeProp(16 * 16, 20 * 16, 'viking_wooden_dock', 0.6);
-    // Moored Longships
-    this.decorManager.placeProp(10 * 16, 16 * 16, 'viking_drakkar_red_sail', 0.45);
+    // Wooden Harbor Pier (Tier 1: 128x65 * 0.70 = 90x46 px)
+    this.decorManager.placeProp(15 * 16, 20 * 16, 'viking_wooden_dock', 0.70);
+    // Moored Longships (Tier 1: 86-151 px)
+    this.decorManager.placeProp(9 * 16, 15 * 16, 'viking_drakkar_red_sail', 0.45);
     this.decorManager.placeProp(8 * 16, 26 * 16, 'viking_ship_blue_sail', 0.45);
-    this.decorManager.placeProp(12 * 16, 32 * 16, 'viking_knarr_trading', 0.45);
-    // Anchors & Cargo barrels
-    this.decorManager.placeProp(18 * 16, 24 * 16, 'viking_iron_anchor', 0.35);
-    this.decorManager.placeProp(19 * 16, 21 * 16, 'viking_stacked_cargo_barrels', 0.35);
-    this.decorManager.placeProp(20 * 16, 25 * 16, 'viking_fishnet_drying', 0.38);
+    this.decorManager.placeProp(11 * 16, 33 * 16, 'viking_knarr_trading', 0.85);
+    // Small & Medium Harbor Props (Tier 2 & Tier 3)
+    this.decorManager.placeProp(18 * 16, 24 * 16, 'viking_iron_anchor', 0.22);
+    this.decorManager.placeProp(19 * 16, 21 * 16, 'viking_stacked_cargo_barrels', 0.22);
+    this.decorManager.placeProp(21 * 16, 25 * 16, 'viking_fishnet_drying', 0.50);
 
     // --- 3. SACRED BLÓT GROVE & RUNESTONES (K2) ---
-    this.decorManager.placeProp(64 * 16, 23 * 16, 'viking_blot_fire_altar', 0.35);
+    this.decorManager.placeProp(64 * 16, 23 * 16, 'viking_blot_fire_altar', 0.36);
     this.livingWorldManager.registerFireSource(64 * 16, 23 * 16, true, 30, 0xef4444);
     this.decorManager.placeProp(60 * 16, 24 * 16, 'viking_runestone_futhark_red', 0.36);
     this.decorManager.placeProp(68 * 16, 24 * 16, 'viking_runestone_knotwork', 0.36);
-    this.decorManager.placeProp(62 * 16, 20 * 16, 'viking_god_totem_odin', 0.35);
-    this.decorManager.placeProp(66 * 16, 20 * 16, 'viking_god_totem_wolf', 0.35);
-    const banner = this.decorManager.placeProp(58 * 16, 26 * 16, 'viking_banner_raven_red', 0.35);
+    this.decorManager.placeProp(62 * 16, 20 * 16, 'viking_god_totem_odin', 0.38);
+    this.decorManager.placeProp(66 * 16, 20 * 16, 'viking_god_totem_wolf', 0.38);
+    const banner = this.decorManager.placeProp(57 * 16, 26 * 16, 'viking_banner_raven_red', 0.35);
     if (banner) this.livingWorldManager.registerBanner(banner);
-
-    // Lindisfarne, Paris, Danelag and Stamford Bridge props are dynamically gated in rebuildChapterEntities()
   }
 
   // =========================================================================
@@ -521,10 +545,25 @@ export class WorldScene extends Phaser.Scene {
     });
 
     // 2. Built Infrastructure Projects (Taste [B])
+    const builtScaleMap: Record<string, number> = {
+      viking_longhouse_thatched: 0.65,
+      viking_blot_fire_altar: 0.36,
+      viking_drakkar_full: 0.62,
+      monastery_scriptorium_desk: 0.42,
+      viking_camp_tent: 0.55,
+      paris_fortress_gate: 0.72,
+      viking_cottage_gable: 0.85,
+      viking_god_totem_odin: 0.38,
+      viking_runestone_classic: 0.38,
+      viking_round_hut: 0.82,
+      viking_fishnet_drying: 0.50,
+      bridge_timber_crossing: 0.60,
+    };
     VIKING_BUILDINGS.forEach((b) => {
       const isBuilt = gameState.builtBuildings.has(b.id);
       if (isBuilt) {
-        const img = this.decorManager.placeProp(b.x * 16, b.y * 16, b.propKey, 0.6);
+        const sc = builtScaleMap[b.propKey] || 0.6;
+        const img = this.decorManager.placeProp(b.x * 16, b.y * 16, b.propKey, sc);
         if (img) this.dynamicGroup.add(img);
       } else if (b.chapter === ch) {
         // Active building site
@@ -543,30 +582,28 @@ export class WorldScene extends Phaser.Scene {
 
     // 3. Chapter-gated historical structures
     if (ch >= 4) {
-      const p1 = this.decorManager.placeProp(52 * 16, 17 * 16, 'monastery_stone_arch', 0.5);
-      const p2 = this.decorManager.placeProp(54 * 16, 18 * 16, 'monastery_golden_altar', 0.35);
-      const p3 = this.decorManager.placeProp(48 * 16, 18 * 16, 'viking_weapon_rack_spears', 0.35);
+      const p1 = this.decorManager.placeProp(52 * 16, 16 * 16, 'monastery_stone_arch', 0.85);
+      const p2 = this.decorManager.placeProp(56 * 16, 18 * 16, 'monastery_golden_altar', 0.42);
+      const p3 = this.decorManager.placeProp(47 * 16, 18 * 16, 'viking_weapon_rack_spears', 0.35);
       if (p1) this.dynamicGroup.add(p1);
       if (p2) this.dynamicGroup.add(p2);
       if (p3) this.dynamicGroup.add(p3);
     }
 
     if (ch >= 7) {
-      const p4 = this.decorManager.placeProp(48 * 16, 30 * 16, 'viking_cottage_gable', 0.6);
-      const p5 = this.decorManager.placeProp(52 * 16, 31 * 16, 'viking_shield_stand_rune', 0.35);
-      const p6 = this.decorManager.placeProp(44 * 16, 32 * 16, 'viking_armor_stand_chainmail', 0.35);
-      if (p4) this.dynamicGroup.add(p4);
+      const p5 = this.decorManager.placeProp(53 * 16, 31 * 16, 'viking_shield_stand_rune', 0.35);
+      const p6 = this.decorManager.placeProp(43 * 16, 32 * 16, 'viking_armor_stand_chainmail', 0.35);
       if (p5) this.dynamicGroup.add(p5);
       if (p6) this.dynamicGroup.add(p6);
     }
 
     if (ch >= 6) {
-      const p7 = this.decorManager.placeProp(32 * 16, 68 * 16, 'paris_fortress_gate', 0.6);
-      const p8 = this.decorManager.placeProp(36 * 16, 66 * 16, 'paris_stone_tower', 0.6);
-      const p9 = this.decorManager.placeProp(28 * 16, 68 * 16, 'paris_stone_wall', 0.6);
-      const p10 = this.decorManager.placeProp(38 * 16, 70 * 16, 'siege_catapult_wood', 0.4);
-      const p11 = this.decorManager.placeProp(30 * 16, 71 * 16, 'battlefield_wooden_stakes', 0.35);
-      const p12 = this.decorManager.placeProp(35 * 16, 72 * 16, 'viking_treasure_chest_danegeld', 0.35);
+      const p7 = this.decorManager.placeProp(32 * 16, 68 * 16, 'paris_fortress_gate', 0.72);
+      const p8 = this.decorManager.placeProp(37 * 16, 66 * 16, 'paris_stone_tower', 0.90);
+      const p9 = this.decorManager.placeProp(25 * 16, 68 * 16, 'paris_stone_wall', 0.55);
+      const p10 = this.decorManager.placeProp(41 * 16, 70 * 16, 'siege_catapult_wood', 0.85);
+      const p11 = this.decorManager.placeProp(30 * 16, 72 * 16, 'battlefield_wooden_stakes', 0.70);
+      const p12 = this.decorManager.placeProp(35 * 16, 72 * 16, 'viking_treasure_chest_danegeld', 0.22);
       if (p7) this.dynamicGroup.add(p7);
       if (p8) this.dynamicGroup.add(p8);
       if (p9) this.dynamicGroup.add(p9);
@@ -576,8 +613,8 @@ export class WorldScene extends Phaser.Scene {
     }
 
     if (ch >= 12) {
-      const p13 = this.decorManager.placeProp(42 * 16, 74 * 16, 'bridge_timber_crossing', 0.6);
-      const p14 = this.decorManager.placeProp(46 * 16, 75 * 16, 'viking_camp_tent', 0.5);
+      const p13 = this.decorManager.placeProp(42 * 16, 74 * 16, 'bridge_timber_crossing', 0.60);
+      const p14 = this.decorManager.placeProp(47 * 16, 75 * 16, 'viking_camp_tent', 0.55);
       if (p13) this.dynamicGroup.add(p13);
       if (p14) this.dynamicGroup.add(p14);
     }
@@ -586,17 +623,18 @@ export class WorldScene extends Phaser.Scene {
     VIKING_RELICS.forEach((r) => {
       const isFound = gameState.discoveredRelics.has(r.id);
       if (!isFound && r.minChapter <= ch) {
-        // Glowing discovery marker (Section 2.6)
+        // Glowing discovery marker (Tier 3: 32x32 * 0.65 = 21x21 px)
         const marker = this.add
           .image(r.x * 16, r.y * 16, 'relic_marker_glow')
+          .setOrigin(0.5, 0.8)
           .setDepth(r.y * 16 - 2)
-          .setScale(0.95);
+          .setScale(0.65);
         this.dynamicGroup.add(marker);
 
         // Pulsing glow tween
         this.tweens.add({
           targets: marker,
-          scale: 1.08,
+          scale: 0.72,
           alpha: 0.85,
           yoyo: true,
           repeat: -1,
@@ -617,8 +655,9 @@ export class WorldScene extends Phaser.Scene {
       }
     });
 
-    // 4. Natural Resource Hotspots (Gerste, Holz, Moor-Erz, Bernstein, Kräuter)
+    // 4. Natural Resource Hotspots (Wildapfel, Gerste, Holz, Moor-Erz, Bernstein, Kräuter)
     const hotspots: Array<{ id: string; name: string; item: VikingItemId; x: number; y: number }> = [
+      { id: 'res_wildapfel_1', name: 'Wildapfelbaum am Fjordhof', item: 'gerste_roggen', x: 32 * 16, y: 18 * 16 },
       { id: 'res_gerste_1', name: 'Reifes Gerstenfeld', item: 'gerste_roggen', x: 30 * 16, y: 35 * 16 },
       { id: 'res_gerste_2', name: 'Roggenacker am Fjord', item: 'gerste_roggen', x: 26 * 16, y: 34 * 16 },
       { id: 'res_holz_1', name: 'Eichenbestand am Waldrand', item: 'bauholz', x: 44 * 16, y: 22 * 16 },
@@ -657,6 +696,7 @@ export class WorldScene extends Phaser.Scene {
     const isMoving = this.handlePlayerMovement(delta);
     this.livingWorldManager.update(delta, this.player.x, this.player.y, isMoving);
     this.wildlifeManager.update(time, delta, this.player.x, this.player.y);
+    this.companionManager?.update(this.player, this.targets, delta);
     this.updateSingleProximityBadge();
     this.updateQuestCompass();
   }
@@ -765,6 +805,20 @@ export class WorldScene extends Phaser.Scene {
       }
     }
 
+    const dogSprite = this.companionManager?.getSprite();
+    const dogDist = this.companionManager?.getDistanceTo(this.player.x, this.player.y) ?? Infinity;
+    if (!nearest && dogSprite && dogDist < 42) {
+      nearest = {
+        id: 'companion_fenrir',
+        kind: 'portal',
+        name: 'Fenrir (Nordischer Fjordhund)',
+        sub: '[E] Treuen Begleiter kraulen',
+        x: dogSprite.x,
+        y: dogSprite.y,
+        minChapter: 1,
+      };
+    }
+
     this.activeTarget = nearest;
 
     if (!nearest) {
@@ -772,10 +826,12 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    // Project world coordinates to screen pixels
+    // Project world coordinates to screen pixels via canvas.getBoundingClientRect()
     const cam = this.cameras.main;
-    const sx = (nearest.x - cam.scrollX) * cam.zoom + this.scale.width / 2 - (cam.width * cam.zoom) / 2;
-    const sy = (nearest.y - 24 - cam.scrollY) * cam.zoom + this.scale.height / 2 - (cam.height * cam.zoom) / 2;
+    const canvas = this.game.canvas;
+    const rect = canvas.getBoundingClientRect();
+    const sx = ((nearest.x - cam.worldView.x) / cam.worldView.width) * rect.width + rect.left;
+    const sy = ((nearest.y - 24 - cam.worldView.y) / cam.worldView.height) * rect.height + rect.top;
 
     // Single DOM Badge rendering
     this.labelLayer.innerHTML = `
@@ -790,6 +846,11 @@ export class WorldScene extends Phaser.Scene {
     if (!this.activeTarget) return;
 
     const t = this.activeTarget;
+    if (t.id === 'companion_fenrir') {
+      this.companionManager?.pet();
+      return;
+    }
+
     const ui = this.scene.get('UI') as any;
     if (!ui) return;
 

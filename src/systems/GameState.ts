@@ -62,6 +62,8 @@ export class GameState {
   public playerName = 'Astrid';
   public playTimeSeconds = 0;
   public walkedDistanceMeters = 0;
+  public storyFlags: Record<string, boolean> = {};
+  public dilemmaSummary = '';
 
   // Chapter 4-point gating criteria tracking (for 12 chapters)
   // [0: Mentor gesprochen, 1: Ressource/Handwerk beschafft, 2: Siedlungsbau/Station errichtet, 3: Quiz bestanden]
