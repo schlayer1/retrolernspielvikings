@@ -1,0 +1,35 @@
+# CCGS project configuration — single source of truth for project settings.
+# See .claude/docs/effects-map.md for full schema.
+
+schema_version: 1
+
+framework:
+  version: 1.2.0
+  last_upgraded: 2026-11-06
+
+project:
+  name: "Die Wikinger: Vom Fjord nach Vinland"
+  stage: Production
+  kind: game
+
+modes:
+  rigor: standard
+  automation: collaborative
+
+engine:
+  name: Phaser
+  version: "3.80.1"
+  language: TypeScript
+  platform: web
+
+commands:
+  build: "npm run build"
+  test: "node scripts/verify_in_browser.cjs"
+  run: "npm run dev"
+  smoke: "node scripts/check_layout_overlaps.cjs"
+
+performance:
+  target_framerate: 60
+  frame_budget_ms: 16.6
+  draw_call_limit: 100
+  memory_ceiling_mb: 256
