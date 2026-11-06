@@ -9,7 +9,7 @@ framework:
 
 project:
   name: "Die Wikinger: Vom Fjord nach Vinland"
-  stage: Production
+  stage: Polish
   kind: game
 
 modes:

@@ -9,6 +9,7 @@ dist-ssr/
 *.local
 .env*.local
 project.local.yaml
+.projectatlas/
 .DS_Store
 *.log
 

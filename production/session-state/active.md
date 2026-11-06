@@ -33,7 +33,7 @@ Task:
 <!-- /STATUS -->
 
 <!-- CHECKPOINT -->
-Game Studio active for Die Wikinger: Vom Fjord nach Vinland. Stage: Production.
+Gate-Check Production -> Polish PASSED. Stage: Polish. 12 chapters and all core systems validated.
 <!-- /CHECKPOINT -->
 
 ---
