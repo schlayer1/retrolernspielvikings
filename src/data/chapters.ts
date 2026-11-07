@@ -19,6 +19,16 @@ export interface ChapterData {
   quiz: QuizQuestion[];
   summary: string;
   unlocksText: string;
+  targetInterior?: {
+    buildingId: string;
+    buildingName: string;
+    returnX: number;
+    returnY: number;
+  };
+  music: {
+    trackId: string;
+    prompt: string;
+  };
 }
 
 // ============================================================
@@ -113,7 +123,17 @@ export const CHAPTERS: ChapterData[] = [
       }
     ],
     summary: 'Du hast den Hofalltag am Fjord gemeistert, die Bedeutung der autarken Wirtschaft verstanden und die Schlüsselgewalt der nordischen Frauen kennengelernt.',
-    unlocksText: 'Kapitel 2 freigeschaltet: Die Hallen der Götter (Nordische Mythologie & Blót)'
+    unlocksText: 'Kapitel 2 freigeschaltet: Die Hallen der Götter (Nordische Mythologie & Blót)',
+    targetInterior: {
+      buildingId: "langhaus_jarl",
+      buildingName: "Methalle des Jarls",
+      returnX: 34 * 16,
+      returnY: 30 * 16
+    },
+    music: {
+      trackId: "bgm_fjord_dawn",
+      prompt: "16-bit SNES authentic nordic acoustic music with tagelharpa, overtone flute, gentle sheep pasture ambiance, crisp mountain air"
+    }
   },
 
   // --- KAPITEL 2: DIE HALLEN DER GÖTTER (ca. 785 n. Chr.) ---
@@ -161,7 +181,17 @@ export const CHAPTERS: ChapterData[] = [
       }
     ],
     summary: 'Du hast den religiösen Kosmos der Wikinger erkundet, die Bedeutung von Blót und Walhall verstanden und das ältere Futhark-Runensystem studiert.',
-    unlocksText: 'Kapitel 3 freigeschaltet: Der Bau der Drachenboote (Klinkerbauweise & Langschiffe)'
+    unlocksText: 'Kapitel 3 freigeschaltet: Der Bau der Drachenboote (Klinkerbauweise & Langschiffe)',
+    targetInterior: {
+      buildingId: "heiligtum_odin",
+      buildingName: "Heiligtum des Goden",
+      returnX: 34 * 16,
+      returnY: 30 * 16
+    },
+    music: {
+      trackId: "bgm_blot_ritual",
+      prompt: "16-bit SNES pagan temple theme, low throat drone, bone flute melody, slow ceremonial frame drum, sacred ritual"
+    }
   },
 
   // --- KAPITEL 3: DER BAU DER DRACHENBOOTE (ca. 790 n. Chr.) ---
@@ -209,7 +239,17 @@ export const CHAPTERS: ChapterData[] = [
       }
     ],
     summary: 'Du hast die ingenieurtechnische Meisterleistung der Klinkerbauweise gemeistert und die Schiffstypen Langschiff und Knarr kennengelernt.',
-    unlocksText: 'Kapitel 4 freigeschaltet: Der Schock von Lindisfarne (793 n. Chr. & Ursachen der Fahrten)'
+    unlocksText: 'Kapitel 4 freigeschaltet: Der Schock von Lindisfarne (793 n. Chr. & Ursachen der Fahrten)',
+    targetInterior: {
+      buildingId: "bootswerft_drakkar",
+      buildingName: "Fjord-Bootswerft",
+      returnX: 34 * 16,
+      returnY: 30 * 16
+    },
+    music: {
+      trackId: "bgm_shipwright_beat",
+      prompt: "16-bit SNES rhythmic forging and ship crafting theme, axe taps on oak timber, steady rhythm, heroic sea-shanty undertone"
+    }
   },
 
   // --- KAPITEL 4: DER SCHOCK VON LINDISFARNE (793 n. Chr.) ---
@@ -257,7 +297,17 @@ export const CHAPTERS: ChapterData[] = [
       }
     ],
     summary: 'Du hast das historische Schlüsseldatum 793 multiperspektivisch analysiert, das Evangeliar gerettet und die tieferen Ursachen der Raubzüge erarbeitet.',
-    unlocksText: 'Kapitel 5 freigeschaltet: Die Handelswege nach Osten (Waräger, Dnepr & Miklagard)'
+    unlocksText: 'Kapitel 5 freigeschaltet: Die Handelswege nach Osten (Waräger, Dnepr & Miklagard)',
+    targetInterior: {
+      buildingId: "handelskontor_hedeby",
+      buildingName: "Handelsstation Lindisfarne",
+      returnX: 34 * 16,
+      returnY: 30 * 16
+    },
+    music: {
+      trackId: "bgm_sea_crossing",
+      prompt: "16-bit SNES turbulent stormy North Sea crossing, tense minor mode strings, rolling waves, Viking longship adventure"
+    }
   },
 
   // --- KAPITEL 5: DIE HANDELSWEGE NACH OSTEN (ca. 860 n. Chr.) ---
@@ -305,7 +355,17 @@ export const CHAPTERS: ChapterData[] = [
       }
     ],
     summary: 'Du hast die Ostexpedition der Waräger gemeistert, das Prinzip der Portage verstanden und den eurasischen Fernhandel bis Byzanz nachvollzogen.',
-    unlocksText: 'Kapitel 6 freigeschaltet: Der Belagerungsring um Paris (885–886 n. Chr. & Danegeld)'
+    unlocksText: 'Kapitel 6 freigeschaltet: Der Belagerungsring um Paris (885–886 n. Chr. & Danegeld)',
+    targetInterior: {
+      buildingId: "handelskontor_hedeby",
+      buildingName: "Handelskontor Hedeby",
+      returnX: 34 * 16,
+      returnY: 30 * 16
+    },
+    music: {
+      trackId: "bgm_hedeby_market",
+      prompt: "16-bit SNES bustling medieval harbor trading theme, lively plucked cittern, coins clinking, international bazaar"
+    }
   },
 
   // --- KAPITEL 6: DER BELAGERUNGSRING UM PARIS (885–886 n. Chr.) ---
@@ -353,7 +413,17 @@ export const CHAPTERS: ChapterData[] = [
       }
     ],
     summary: 'Du hast die Belagerung von Paris 885/886 analysiert, die Logik strategischer Danegeldzahlungen begriffen und humanitäre Notversorgung erprobt.',
-    unlocksText: 'Kapitel 7 freigeschaltet: Das Danelag und das Gesetz von York (ca. 870–900 n. Chr.)'
+    unlocksText: 'Kapitel 7 freigeschaltet: Das Danelag und das Gesetz von York (ca. 870–900 n. Chr.)',
+    targetInterior: {
+      buildingId: "langhaus_jarl",
+      buildingName: "Kriegerzelt vor Paris",
+      returnX: 34 * 16,
+      returnY: 30 * 16
+    },
+    music: {
+      trackId: "bgm_paris_siege",
+      prompt: "16-bit SNES epic siege anthem, deep war horns, militaristic snare rolls, heavy Viking marching rhythm"
+    }
   },
 
   // --- KAPITEL 7: DAS DANELAG UND DAS GESETZ VON YORK (ca. 870–900 n. Chr.) ---
@@ -401,7 +471,17 @@ export const CHAPTERS: ChapterData[] = [
       }
     ],
     summary: 'Du hast den Wandel von Räubern zu sesshaften Siedlern im Danelag nachvollzogen und den nachhaltigen Kultur- und Sprachtransfer in England verstanden.',
-    unlocksText: 'Kapitel 8 freigeschaltet: Die Taufe des Königs (Harald Blauzahn & Jelling ca. 965 n. Chr.)'
+    unlocksText: 'Kapitel 8 freigeschaltet: Die Taufe des Königs (Harald Blauzahn & Jelling ca. 965 n. Chr.)',
+    targetInterior: {
+      buildingId: "langhaus_jarl",
+      buildingName: "Verhandlungshalle Danelag",
+      returnX: 34 * 16,
+      returnY: 30 * 16
+    },
+    music: {
+      trackId: "bgm_danelaw_accord",
+      prompt: "16-bit SNES diplomatic medieval acoustic hymn, Anglo-Saxon harp meets Norse lyre, solemn peace treaty"
+    }
   },
 
   // --- KAPITEL 8: DIE TAUFE DES KÖNIGS (ca. 965 n. Chr.) ---
@@ -449,7 +529,17 @@ export const CHAPTERS: ChapterData[] = [
       }
     ],
     summary: 'Du hast die politische Dimension der Christianisierung Skandinaviens analysiert und die Jelling-Steine als Meilenstein der dänischen Staatsbildung verstanden.',
-    unlocksText: 'Kapitel 9 freigeschaltet: Der Thing von Island (ca. 930–990 n. Chr. & das Althing am Lögberg)'
+    unlocksText: 'Kapitel 9 freigeschaltet: Der Thing von Island (ca. 930–990 n. Chr. & das Althing am Lögberg)',
+    targetInterior: {
+      buildingId: "heiligtum_odin",
+      buildingName: "Jelling-Denkmalhalle",
+      returnX: 34 * 16,
+      returnY: 30 * 16
+    },
+    music: {
+      trackId: "bgm_jelling_runes",
+      prompt: "16-bit SNES solemn regal runestone anthem, choral counterpoint, ancient chime bells, Christianizing transition"
+    }
   },
 
   // --- KAPITEL 9: DER THING VON ISLAND (ca. 930–990 n. Chr.) ---
@@ -497,7 +587,17 @@ export const CHAPTERS: ChapterData[] = [
       }
     ],
     summary: 'Du hast die frühe Parlamentstradition des Althings erkundet, friedliche Konfliktlösung am Lögberg kennengelernt und die Verfassung Islands erforscht.',
-    unlocksText: 'Kapitel 10 freigeschaltet: Kurs auf das Unbekannte – Grönland (ca. 982 n. Chr. & Erik der Rote)'
+    unlocksText: 'Kapitel 10 freigeschaltet: Kurs auf das Unbekannte – Grönland (ca. 982 n. Chr. & Erik der Rote)',
+    targetInterior: {
+      buildingId: "langhaus_jarl",
+      buildingName: "Lögberg-Versammlungszelt",
+      returnX: 34 * 16,
+      returnY: 30 * 16
+    },
+    music: {
+      trackId: "bgm_althing_peace",
+      prompt: "16-bit SNES outdoor parliament assembly, windy Icelandic highland theme, resolute law-speaker brass motif"
+    }
   },
 
   // --- KAPITEL 10: KURS AUF DAS UNBEKANNTE – GRÖNLAND (ca. 982 n. Chr.) ---
@@ -545,7 +645,17 @@ export const CHAPTERS: ChapterData[] = [
       }
     ],
     summary: 'Du hast die bahnbrechende Navigationskunst auf offener See erforscht, die Funktion des Sonnensteins verstanden und das arktische Überleben gemeistert.',
-    unlocksText: 'Kapitel 11 freigeschaltet: Das sagenhafte Vinland (ca. 1000 n. Chr. & Leif Eriksson in Amerika)'
+    unlocksText: 'Kapitel 11 freigeschaltet: Das sagenhafte Vinland (ca. 1000 n. Chr. & Leif Eriksson in Amerika)',
+    targetInterior: {
+      buildingId: "bootswerft_drakkar",
+      buildingName: "Brattahlid-Langhaus",
+      returnX: 34 * 16,
+      returnY: 30 * 16
+    },
+    music: {
+      trackId: "bgm_greenland_fjords",
+      prompt: "16-bit SNES cold subarctic exploration theme, crystal glass tones, melancholic bowed strings, Greenland fjords"
+    }
   },
 
   // --- KAPITEL 11: DAS SAGENHAFTE VINLAND (ca. 1000 n. Chr.) ---
@@ -593,7 +703,17 @@ export const CHAPTERS: ChapterData[] = [
       }
     ],
     summary: 'Du hast die transatlantische Pionierleistung Leif Erikssons erforscht, die Archäologie von L’Anse aux Meadows analysiert und den Erstkontakt erarbeitet.',
-    unlocksText: 'Kapitel 12 freigeschaltet: Das Ende der Ära – Stamford Bridge (1066 n. Chr. & Ausklang)'
+    unlocksText: 'Kapitel 12 freigeschaltet: Das Ende der Ära – Stamford Bridge (1066 n. Chr. & Ausklang)',
+    targetInterior: {
+      buildingId: "bootswerft_drakkar",
+      buildingName: "Vinland-Siedlungshütte",
+      returnX: 34 * 16,
+      returnY: 30 * 16
+    },
+    music: {
+      trackId: "bgm_vinland_discovery",
+      prompt: "16-bit SNES awe-inspiring new world discovery, soaring melody, ocean expanse, wonder and hope"
+    }
   },
 
   // --- KAPITEL 12: DAS ENDE DER ÄRA – STAMFORD BRIDGE (1066 n. Chr.) ---
@@ -641,6 +761,16 @@ export const CHAPTERS: ChapterData[] = [
       }
     ],
     summary: 'Du hast alle 12 Kapitel des Wikinger-Lernabenteuers vollendet, den Wandel vom frühmittelalterlichen Fjorddorf bis zur europäischen Staatenbildung gemeistert und dein Geschichtsdiplom errungen!',
-    unlocksText: '🎉 Gratulation! Alle 12 Kapitel gemeistert. Öffne deine Urkunde mit Taste [U]!'
+    unlocksText: '🎉 Gratulation! Alle 12 Kapitel gemeistert. Öffne deine Urkunde mit Taste [U]!',
+    targetInterior: {
+      buildingId: "langhaus_jarl",
+      buildingName: "Königshalle von Nidaros",
+      returnX: 34 * 16,
+      returnY: 30 * 16
+    },
+    music: {
+      trackId: "bgm_nordic_legacy",
+      prompt: "16-bit SNES majestic historical finale, full retro orchestra, triumphant fanfare, enduring Viking legacy"
+    }
   }
 ];

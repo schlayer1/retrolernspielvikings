@@ -132,3 +132,6 @@ export const VIKING_RELICS: VikingRelic[] = [
     correctIndex: 0,
   },
 ];
+
+export const RELICS = VIKING_RELICS;
+

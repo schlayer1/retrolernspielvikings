@@ -64,6 +64,14 @@ export class GameState {
   public walkedDistanceMeters = 0;
   public storyFlags: Record<string, boolean> = {};
   public dilemmaSummary = '';
+  public compassText = '';
+
+  public markLexiconRead(id: string): void {
+    this.lexiconRead.add(id);
+    this.unlockedLexicon.add(id);
+    this.notify();
+    this.autoSave();
+  }
 
   // Chapter 4-point gating criteria tracking (for 12 chapters)
   // [0: Mentor gesprochen, 1: Ressource/Handwerk beschafft, 2: Siedlungsbau/Station errichtet, 3: Quiz bestanden]

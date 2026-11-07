@@ -1,0 +1,74 @@
+{
+  "chapter_1": {
+    "trackId": "bgm_fjord_dawn",
+    "bId": "langhaus_jarl",
+    "bName": "Methalle des Jarls",
+    "prompt": "16-bit SNES authentic nordic acoustic music with tagelharpa, overtone flute, gentle sheep pasture ambiance, crisp mountain air"
+  },
+  "chapter_2": {
+    "trackId": "bgm_blot_ritual",
+    "bId": "heiligtum_odin",
+    "bName": "Heiligtum des Goden",
+    "prompt": "16-bit SNES pagan temple theme, low throat drone, bone flute melody, slow ceremonial frame drum, sacred ritual"
+  },
+  "chapter_3": {
+    "trackId": "bgm_shipwright_beat",
+    "bId": "bootswerft_drakkar",
+    "bName": "Fjord-Bootswerft",
+    "prompt": "16-bit SNES rhythmic forging and ship crafting theme, axe taps on oak timber, steady rhythm, heroic sea-shanty undertone"
+  },
+  "chapter_4": {
+    "trackId": "bgm_sea_crossing",
+    "bId": "handelskontor_hedeby",
+    "bName": "Handelsstation Lindisfarne",
+    "prompt": "16-bit SNES turbulent stormy North Sea crossing, tense minor mode strings, rolling waves, Viking longship adventure"
+  },
+  "chapter_5": {
+    "trackId": "bgm_hedeby_market",
+    "bId": "handelskontor_hedeby",
+    "bName": "Handelskontor Hedeby",
+    "prompt": "16-bit SNES bustling medieval harbor trading theme, lively plucked cittern, coins clinking, international bazaar"
+  },
+  "chapter_6": {
+    "trackId": "bgm_paris_siege",
+    "bId": "langhaus_jarl",
+    "bName": "Kriegerzelt vor Paris",
+    "prompt": "16-bit SNES epic siege anthem, deep war horns, militaristic snare rolls, heavy Viking marching rhythm"
+  },
+  "chapter_7": {
+    "trackId": "bgm_danelaw_accord",
+    "bId": "langhaus_jarl",
+    "bName": "Verhandlungshalle Danelag",
+    "prompt": "16-bit SNES diplomatic medieval acoustic hymn, Anglo-Saxon harp meets Norse lyre, solemn peace treaty"
+  },
+  "chapter_8": {
+    "trackId": "bgm_jelling_runes",
+    "bId": "heiligtum_odin",
+    "bName": "Jelling-Denkmalhalle",
+    "prompt": "16-bit SNES solemn regal runestone anthem, choral counterpoint, ancient chime bells, Christianizing transition"
+  },
+  "chapter_9": {
+    "trackId": "bgm_althing_peace",
+    "bId": "langhaus_jarl",
+    "bName": "Lögberg-Versammlungszelt",
+    "prompt": "16-bit SNES outdoor parliament assembly, windy Icelandic highland theme, resolute law-speaker brass motif"
+  },
+  "chapter_10": {
+    "trackId": "bgm_greenland_fjords",
+    "bId": "bootswerft_drakkar",
+    "bName": "Brattahlid-Langhaus",
+    "prompt": "16-bit SNES cold subarctic exploration theme, crystal glass tones, melancholic bowed strings, Greenland fjords"
+  },
+  "chapter_11": {
+    "trackId": "bgm_vinland_discovery",
+    "bId": "bootswerft_drakkar",
+    "bName": "Vinland-Siedlungshütte",
+    "prompt": "16-bit SNES awe-inspiring new world discovery, soaring melody, ocean expanse, wonder and hope"
+  },
+  "chapter_12": {
+    "trackId": "bgm_nordic_legacy",
+    "bId": "langhaus_jarl",
+    "bName": "Königshalle von Nidaros",
+    "prompt": "16-bit SNES majestic historical finale, full retro orchestra, triumphant fanfare, enduring Viking legacy"
+  }
+}

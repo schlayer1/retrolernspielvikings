@@ -1,3 +1,5 @@
+import { FootstepAudioSynthesizer, GroundSurface } from './FootstepAudio';
+
 class SoundSystem {
   private ctx: AudioContext | null = null;
   public muted = false;
@@ -5,6 +7,7 @@ class SoundSystem {
   private bgmAudio: HTMLAudioElement | null = null;
   private bgmVolume = 0.28;
   private currentChapter = 1;
+  private footsteps = new FootstepAudioSynthesizer();
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -206,6 +209,10 @@ class SoundSystem {
     this.playTone(480, 'square', 0.06, 0.08, 640);
   }
 
+  public playCollect(): void {
+    this.playTone(520, 'triangle', 0.08, 0.1, 780);
+  }
+
   public playOpenModal(): void {
     this.playTone(330, 'sine', 0.08, 0.1, 550);
   }
@@ -247,6 +254,35 @@ class SoundSystem {
     [392.0, 523.25, 659.25].forEach((f, idx) => {
       setTimeout(() => this.playTone(f, 'triangle', 0.14, 0.14), idx * 60);
     });
+  }
+
+  public step(surface: GroundSurface = 'grass'): void {
+    if (this.muted) return;
+    const ctx = this.getContext();
+    if (ctx) {
+      this.footsteps.setContext(ctx);
+      this.footsteps.playFootstep(surface);
+    }
+  }
+
+  public playFootstep(surface: GroundSurface = 'grass'): void {
+    this.step(surface);
+  }
+
+  public playClick(): void {
+    this.playSelect();
+  }
+
+  public click(): void {
+    this.playClick();
+  }
+
+  public playSuccess(): void {
+    this.playChapterComplete();
+  }
+
+  public playFanfare(): void {
+    this.playChapterComplete();
   }
 }
 

@@ -9,6 +9,8 @@ export class BootScene extends Phaser.Scene {
     // 1. World Atlases & Ground Tilesets
     this.load.atlas('world_atlas', '/assets/world/world_atlas.png', '/assets/world/world_atlas.json');
     this.load.image('ground_a2', '/assets/world/ground_a2.png');
+    this.load.image('cliffs_nature', '/assets/world/cliffs_nature.png');
+    this.load.image('cliffs_desert', '/assets/world/cliffs_desert.png');
     this.load.image('overworld', '/assets/gfx/Overworld.png');
     this.load.image('farm', '/assets/gfx/farm.png');
     this.load.image('objects', '/assets/gfx/objects.png');

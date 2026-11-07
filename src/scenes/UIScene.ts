@@ -4,12 +4,17 @@ import { CHAPTERS, HIGHLIGHT_TERMS } from '../data/chapters';
 import { VIKING_BUILDINGS, VIKING_ITEMS, VIKING_RECIPES, VikingItemId } from '../data/items';
 import { LEXICON_ENTRIES } from '../data/lexicon';
 import { VIKING_RELICS, VikingRelic } from '../data/relics';
+import { STATIONS } from '../data/stations';
 import { gameState, VIKING_ROLES } from '../systems/GameState';
 import { PlayerGender, PlayerRole } from '../systems/SaveManager';
 import { TouchControls } from '../ui/TouchControls';
 import { PrintSheetManager } from '../ui/PrintSheet';
 import { DilemmaModal } from '../ui/DilemmaModal';
+import { StationModal } from '../ui/StationModal';
+import { ArtifactInspectorModal } from '../ui/ArtifactInspectorModal';
+import { TimelineModal } from '../ui/TimelineModal';
 import { VIKING_DILEMMAS } from '../data/dilemmas';
+import { WorldScene } from './WorldScene';
 
 export type ModalType =
   | 'none'
@@ -29,7 +34,10 @@ export type ModalType =
 export class UIScene extends Phaser.Scene {
   public touchControls!: TouchControls;
   private activeModal: ModalType = 'start';
-  private dilemmaModal!: DilemmaModal;
+  private dilemmaModal = new DilemmaModal();
+  private stationModal = new StationModal();
+  private artifactInspector = new ArtifactInspectorModal();
+  private timelineModal = new TimelineModal();
   private uiRoot!: HTMLDivElement;
   private hudHeader!: HTMLDivElement;
   private questBox!: HTMLDivElement;
@@ -53,10 +61,15 @@ export class UIScene extends Phaser.Scene {
   }
 
   create() {
-    (window as any).__VIK_UI__ = this;
-    (window as any).__GERM_UI__ = this;
+    const win = window as any;
+    win.__VIK_UI__ = this;
+    win.__GERM_UI__ = this;
+    win.__openStation = (id: string) => this.openStation(id);
+    win.__openArtifactInspector = (id: string) => this.openArtifactInspector(id);
+    win.__openTimeline = () => this.openTimeline();
+    win.__triggerPrintSheet = () => this.triggerHefterPrint();
+
     this.initDOMStructure();
-    this.dilemmaModal = new DilemmaModal();
     this.touchControls = new TouchControls((key) => this.handleShortcutKey(key));
     this.registerKeyboardShortcuts();
 
@@ -96,10 +109,10 @@ export class UIScene extends Phaser.Scene {
     this.uiRoot.innerHTML = '';
 
     this.hudHeader = document.createElement('div');
-    this.hudHeader.className = 'hud-top-bar';
+    this.hudHeader.className = 'hud-top';
 
     this.questBox = document.createElement('div');
-    this.questBox.className = 'hud-quest-tracker';
+    this.questBox.className = 'hud-bottom';
 
     this.modalOverlay = document.createElement('div');
     this.modalOverlay.className = 'modal-backdrop';
@@ -116,25 +129,40 @@ export class UIScene extends Phaser.Scene {
 
   private registerKeyboardShortcuts(): void {
     window.addEventListener('keydown', (e) => {
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
       const key = e.key.toUpperCase();
-      if (key === 'ESCAPE' || key === 'P') {
-        if (this.activeModal === 'none') {
-          this.openPauseDashboard();
-        } else if (this.activeModal !== 'start') {
+      if (key === 'ESCAPE') {
+        if (this.activeModal !== 'start' && this.activeModal !== 'none') {
           this.closeModal();
+        } else if (this.activeModal === 'none') {
+          this.openPauseDashboard();
         }
         return;
       }
-
-      if (this.activeModal !== 'none') return;
-
       this.handleShortcutKey(key);
     });
   }
 
   public handleShortcutKey(key: string): void {
+    if (this.activeModal === 'start') return;
+
+    if (key === 'E') {
+      if (this.activeModal === 'dialog') {
+        this.nextDialogStep();
+      } else if (this.activeModal === 'none') {
+        const world = this.scene.get('World') as WorldScene;
+        world?.triggerActiveInteraction();
+      }
+      return;
+    }
+
+    if (this.activeModal !== 'none' && this.activeModal !== 'dialog') {
+      this.closeModal();
+      return;
+    }
+
     switch (key) {
       case 'I':
         this.openInventory();
@@ -143,6 +171,7 @@ export class UIScene extends Phaser.Scene {
         this.openCrafting();
         break;
       case 'B':
+      case 'H':
         this.openBuildingModal();
         break;
       case 'L':
@@ -151,18 +180,24 @@ export class UIScene extends Phaser.Scene {
       case 'Z':
         this.openTimeline();
         break;
+      case 'P':
+        this.openPauseDashboard();
+        break;
       case 'U':
         this.openCertificate();
         break;
       case 'R':
         this.openDilemma();
         break;
-      case 'M':
-        const muted = sound.toggleBGMMute();
-        this.showToast(muted ? '🔇 Musik stummgeschaltet' : '🎵 Musik eingeschaltet', 'info');
+      case 'F':
+        this.eatFood();
         break;
-      case 'P':
-        this.openPauseDashboard();
+      case 'M':
+        sound.toggleBGMMute();
+        this.renderHUD();
+        break;
+      case 'K':
+        this.openStartScreen();
         break;
     }
   }
@@ -170,7 +205,7 @@ export class UIScene extends Phaser.Scene {
   public showToast(msg: string, type: 'info' | 'success' | 'warning' = 'info'): void {
     const toast = document.createElement('div');
     toast.className = `toast-msg toast-${type}`;
-    toast.textContent = msg;
+    toast.innerHTML = msg;
     this.toastContainer.appendChild(toast);
     setTimeout(() => {
       toast.style.opacity = '0';
@@ -179,77 +214,252 @@ export class UIScene extends Phaser.Scene {
     }, 2800);
   }
 
-  // =========================================================================
-  // HUD TOP BAR & QUEST TRACKER
-  // =========================================================================
-  private renderHUD(): void {
-    const chData = CHAPTERS.find((c) => c.id === gameState.chapter) || CHAPTERS[0];
-    const roleDef = VIKING_ROLES.find((r) => r.id === gameState.role) || VIKING_ROLES[0];
-
-    this.hudHeader.innerHTML = `
-      <div class="hud-left">
-        <div class="hud-ch-badge">Kapitel ${gameState.chapter} von 12 &bull; ${chData.year}</div>
-        <div class="hud-ch-title">${chData.title.split(': ')[1] || chData.title}</div>
-      </div>
-      <div class="hud-right">
-        <div class="hud-player-tag">
-          ${gameState.gender === 'female' ? '👧' : '👦'} ${gameState.playerName} (${roleDef.tribalTitle})
-        </div>
-        <div class="hud-relics-badge">
-          🏆 ${gameState.discoveredRelics.size} / 5 Relikte
-        </div>
-        <div class="hud-quick-buttons">
-          <button class="hud-btn" onclick="window.__VIK_UI__.handleShortcutKey('I')" title="Beutel & Vorräte [I]">🎒 [I]</button>
-          <button class="hud-btn" onclick="window.__VIK_UI__.handleShortcutKey('C')" title="Handwerk [C]">🔨 [C]</button>
-          <button class="hud-btn" onclick="window.__VIK_UI__.handleShortcutKey('B')" title="Bauten [B]">🏛️ [B]</button>
-          <button class="hud-btn" onclick="window.__VIK_UI__.handleShortcutKey('L')" title="Fachlexikon [L]">📖 [L]</button>
-          <button class="hud-btn" onclick="window.__VIK_UI__.handleShortcutKey('Z')" title="Zeitstrahl [Z]">⏳ [Z]</button>
-          <button class="hud-btn" onclick="window.__VIK_UI__.handleShortcutKey('R')" title="Thing & Dilemma [R]">⚖️ [R]</button>
-          <button class="hud-btn" onclick="window.__VIK_UI__.handleShortcutKey('U')" title="Geschichtsdiplom [U]">📜 [U]</button>
-          <button class="hud-btn" onclick="window.__VIK_UI__.handleShortcutKey('P')" title="Chronisten-Pause [P]">⚙️ [P]</button>
-        </div>
-      </div>
-    `;
+  public eatFood(): void {
+    const foods: VikingItemId[] = ['gerste_roggen', 'met_krug', 'schafmilch', 'wildbret_braten', 'fisch_trocken'];
+    for (const f of foods) {
+      if ((gameState.inventory[f] || 0) > 0) {
+        gameState.removeItem(f, 1);
+        sound.playCollect();
+        this.showToast(`🍎 Du stärkst dich mit ${VIKING_ITEMS[f].name}! (+15 Vorräte)`, 'success');
+        this.renderHUD();
+        return;
+      }
+    }
+    sound.playClick();
+    this.showToast('🍎 Kein Proviant im Beutel! Sammle Gerste oder Fisch.');
   }
 
-  private renderQuestTracker(): void {
-    const chData = CHAPTERS.find((c) => c.id === gameState.chapter) || CHAPTERS[0];
-    const objs = gameState.chapterObjectives[gameState.chapter] || [false, false, false, false];
-    const completedCount = objs.filter(Boolean).length;
-    const isDone = completedCount === 4;
+  public openStation(stationId: string): void {
+    const st = STATIONS.find((s) => s.id === stationId);
+    if (!st) return;
+    this.closeModal();
+    this.stationModal.open(st, () => {
+      this.showToast(`🏛️ Station gemeistert: ${st.title}! (+100 Punkte)`, 'success');
+      sound.playSuccess();
+    });
+  }
 
-    const world = this.scene.get('World') as any;
-    const compassText = world && world.currentCompassText ? world.currentCompassText : '🧭 Kompass aktiv...';
+  public openArtifactInspector(relicId: string): void {
+    const rel = VIKING_RELICS.find((r) => r.id === relicId);
+    if (!rel) return;
+    this.closeModal();
+    this.artifactInspector.open(rel, () => {
+      this.renderHUD();
+    });
+  }
 
-    // Current task description
-    let activeTaskText = `Sprich mit ${chData.mentorName.split(' (')[0]} (E).`;
-    if (objs[0] && !objs[1]) {
-      activeTaskText = `Sammle Rohstoffe am Fjord oder stelle Ausrüstung her (C).`;
-    } else if (objs[0] && objs[1] && !objs[2]) {
-      activeTaskText = `Errichte das Kapitel-Bauvorhaben am Bauplatz (B).`;
-    } else if (objs[0] && objs[1] && objs[2] && !objs[3]) {
-      activeTaskText = `Meistere das didaktische Kapitel-Quiz bei ${chData.mentorName.split(' (')[0]} (E).`;
-    } else if (isDone) {
-      activeTaskText = `Kapitel gemeistert! Reise weiter über den Zeitstrahl (Z).`;
+  // =========================================================================
+  // HUD TOP BAR & QUEST TRACKER (1:1 STEINZEIT / SKILL STANDARD)
+  // =========================================================================
+  public renderHUD(): void {
+    this.hudHeader.style.display = this.activeModal === 'start' ? 'none' : 'flex';
+    this.questBox.style.display = this.activeModal === 'start' ? 'none' : 'flex';
+    if (this.touchControls) {
+      this.touchControls.setVisible(this.activeModal === 'none');
     }
 
-    this.questBox.innerHTML = `
-      <div class="quest-header">
-        <span class="quest-title-text">${chData.title} · ${chData.year}</span>
-        <span class="quest-counter ${isDone ? 'quest-done' : ''}">${completedCount} / 4</span>
+    const ch = CHAPTERS.find((c) => c.id === gameState.chapter) || CHAPTERS[0];
+    const roleDef = VIKING_ROLES.find((r) => r.id === gameState.role) || VIKING_ROLES[0];
+    const objs = gameState.chapterObjectives[ch.id] || [false, false, false, false];
+    const completedCount = objs.filter((x) => x).length;
+    const activeIdx = objs.findIndex((done) => !done);
+
+    const taskText =
+      activeIdx === -1
+        ? `Alle Aufgaben gemeistert! Sprich mit ${ch.mentorName} für das Thing-Quiz (E).`
+        : ch.hints ? ch.hints[activeIdx] || ch.questDescription : ch.questDescription;
+
+    const supplyVal = Math.min(100, 60 + gameState.builtBuildings.size * 6 + Object.keys(gameState.inventory).length * 4);
+    const orderVal = Math.min(100, 55 + gameState.completedChapters.size * 5 + gameState.discoveredRelics.size * 6);
+    const lawVal = Math.min(100, Math.round((gameState.unlockedLexicon.size / 27) * 100));
+
+    this.hudHeader.innerHTML = `
+      <div class="hud-card" id="hud-quest-box">
+        <div id="hud-chapter-title">
+          ⚔️ Kap. ${ch.id}: ${ch.title} (${ch.year}) · ${gameState.playerName} (${roleDef.name})
+        </div>
+        <div id="hud-quest">
+          <div style="margin-bottom:4px;">📋 <strong>Aufgabe:</strong> ${taskText}</div>
+          <div class="quest-steps-list" style="margin:4px 0;">
+            ${(ch.hints || [ch.questDescription])
+              .map(
+                (h, idx) => `
+              <div class="quest-step-item ${objs[idx] ? 'step-done' : ''}">
+                <span>${objs[idx] ? '✅' : '⬜'}</span>
+                <span>${h}</span>
+              </div>
+            `
+              )
+              .join('')}
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:4px;">
+            <span style="font-size:10.5px;color:${completedCount === 4 ? '#4ade80' : '#fde68a'};">
+              ${completedCount === 4 ? `✨ Bereit für Thing-Quiz bei ${ch.mentorName} [E]!` : `💡 Mentor: ${ch.mentorName} [E]`}
+            </span>
+            <button id="btn-open-mentor-dialog" class="hud-btn" style="padding:2px 7px;font-size:10.5px;">
+              💬 ${ch.mentorName}
+            </button>
+          </div>
+        </div>
+        <div id="hud-compass" class="hud-compass-line">${gameState.compassText}</div>
       </div>
-      <div class="quest-task-line"><b>Aufgabe:</b> ${activeTaskText}</div>
-      <div class="quest-divider"></div>
-      <div id="hud-compass" class="quest-compass">${compassText}</div>
+
+      <div class="hud-right">
+        <div class="hud-card" id="hud-bars-card">
+          <div class="bar-row" title="Vorräte & Ernte (Getreide & Vieh)">
+            <span>🍖 Vorräte</span>
+            <div class="bar-track"><div class="bar-fill orange" id="bar-supply" style="width:${supplyVal}%"></div></div>
+            <span id="val-supply">${supplyVal}</span>
+          </div>
+          <div class="bar-row" title="Sippen-Schutz & Wehrkraft (Wall & Schiffe)">
+            <span>🛡️ Sippen-Schutz</span>
+            <div class="bar-track"><div class="bar-fill blue" id="bar-order" style="width:${orderVal}%"></div></div>
+            <span id="val-order">${orderVal}</span>
+          </div>
+          <div class="bar-row" title="Stammeswissen & Brauchtum (Runen & Recht)">
+            <span>📜 Stammeswissen</span>
+            <div class="bar-track"><div class="bar-fill yellow" id="bar-law" style="width:${lawVal}%"></div></div>
+            <span id="val-law">${lawVal}</span>
+          </div>
+          <div class="hud-subinfo">
+            Lexikon: <b id="hud-lex-count">${gameState.unlockedLexicon.size}/27</b> ·
+            🏺 Relikte: <b>${gameState.discoveredRelics.size}/5</b> ·
+            <span id="hud-time-of-day">☀️ Tag</span> ·
+            🎵 Musik: <b id="hud-music-state">${sound.bgmMuted ? 'Aus' : 'An'}</b>
+          </div>
+        </div>
+
+        <div class="hud-btn-row">
+          <button class="hud-btn ${this.activeModal === 'pause' ? 'active' : ''}" id="btn-pause" data-modal="pause" title="Pause-Dashboard [P / ESC]"><span class="key-badge">P</span> ⏸ Pause</button>
+          <button class="hud-btn ${this.activeModal === 'inventory' ? 'active' : ''}" id="btn-bag" data-modal="inventory" title="Beutel & Relikte [I]"><span class="key-badge">I</span> 🎒 Beutel</button>
+          <button class="hud-btn ${this.activeModal === 'craft' ? 'active' : ''}" id="btn-craft" data-modal="craft" title="Handwerk [C]"><span class="key-badge">C</span> Handwerk</button>
+          <button class="hud-btn ${this.activeModal === 'build' ? 'active' : ''}" id="btn-build" data-modal="build" title="Bauten [B]"><span class="key-badge">B</span> Bauten</button>
+          <button class="hud-btn ${this.activeModal === 'lexicon' ? 'active' : ''}" id="btn-lexicon" data-modal="lexicon" title="Wikinger-Lexikon (27 Begriffe) [L]"><span class="key-badge">L</span> Lexikon</button>
+          <button class="hud-btn ${this.activeModal === 'timeline' ? 'active' : ''}" id="btn-timeline" data-modal="timeline" title="Epochen-Zeitstrahl [Z]"><span class="key-badge">Z</span> Zeitstrahl</button>
+          <button class="hud-btn" id="btn-eat" data-action="eat" title="Proviant essen [F]"><span class="key-badge">F</span> Essen</button>
+          <button class="hud-btn" id="btn-music" data-action="music" title="Musik an/aus [M]"><span class="key-badge">M</span> 🎵 Musik</button>
+          <button class="hud-btn" id="btn-epoch" data-modal="start" title="Kapitel wählen [K]"><span class="key-badge">K</span> Epoche</button>
+          <button class="hud-btn ${this.activeModal === 'certificate' ? 'active' : ''}" id="btn-cert" data-modal="certificate" title="Chronisten-Diplom [U]"><span class="key-badge">U</span> Diplom</button>
+        </div>
+      </div>
     `;
+
+    const mentorBtn = this.hudHeader.querySelector('#btn-open-mentor-dialog');
+    if (mentorBtn) {
+      mentorBtn.addEventListener('click', () => {
+        sound.playClick();
+        this.openMentorDialog(ch);
+      });
+    }
+
+    this.hudHeader.querySelectorAll('.hud-btn').forEach((btn) => {
+      if (btn.id === 'btn-open-mentor-dialog') return;
+      btn.addEventListener('click', () => {
+        const action = btn.getAttribute('data-action');
+        if (action === 'eat') {
+          this.eatFood();
+          return;
+        }
+        if (action === 'music') {
+          this.handleShortcutKey('M');
+          return;
+        }
+        const m = btn.getAttribute('data-modal') as ModalType;
+        if (m) {
+          if (m === 'start') {
+            this.openStartScreen();
+          } else if (m === 'pause') {
+            this.openPauseDashboard();
+          } else if (m === 'inventory') {
+            this.openInventory();
+          } else if (m === 'craft') {
+            this.openCrafting();
+          } else if (m === 'build') {
+            this.openBuildingModal();
+          } else if (m === 'lexicon') {
+            this.openLexicon();
+          } else if (m === 'timeline') {
+            this.openTimeline();
+          } else if (m === 'certificate') {
+            this.openCertificate();
+          }
+        }
+      });
+    });
+  }
+
+  public renderQuestTracker(): void {
+    this.questBox.style.display = this.activeModal === 'start' ? 'none' : 'flex';
+    const hotbarItems: VikingItemId[] = [
+      'gerste_roggen',
+      'met_krug',
+      'schafmilch',
+      'bauholz',
+      'klinkernagel',
+      'schiffsteer',
+      'raseneisenerz',
+      'silber_dirham',
+    ];
+
+    const slotsHtml = hotbarItems
+      .map((itemId, idx) => {
+        const def = VIKING_ITEMS[itemId];
+        const qty = gameState.inventory[itemId] || 0;
+        return `
+          <div class="hotbar-slot ${qty > 0 ? 'has-item' : ''}" data-slot-item="${itemId}" title="${def ? def.name : itemId} (${qty} im Beutel)">
+            <img src="${def ? def.icon : '/assets/icons/drakkar.png'}" alt="${def ? def.name : itemId}" style="opacity:${qty > 0 ? '1' : '0.32'}" />
+            <span class="count">${qty > 0 ? qty : idx + 1}</span>
+          </div>
+        `;
+      })
+      .join('');
+
+    const relicSlotsHtml = VIKING_RELICS.map((r) => {
+      const found = gameState.discoveredRelics.has(r.id);
+      return `
+        <div class="hotbar-slot relic-slot ${found ? 'has-item' : ''}" data-slot-relic="${r.id}" title="${found ? r.name : `Unentdecktes Relikt (ab Kap. ${r.minChapter})`}">
+          <img src="${r.icon}" alt="${r.name}" style="opacity:${found ? '1' : '0.25'}" />
+          <span class="count">${found ? '★' : '🔒'}</span>
+        </div>
+      `;
+    }).join('');
+
+    this.questBox.innerHTML = `
+      <div id="hud-hint">WASD / Pfeiltasten = Bewegen · E = Interagieren · F = Essen · C = Handwerk · I = Beutel · P = Pause</div>
+      <div class="hud-bottom-row">
+        <div id="hud-hotbar">
+          ${slotsHtml}
+          ${relicSlotsHtml}
+        </div>
+        <button class="hud-btn" id="btn-hotbar-bag" title="Rucksack öffnen [I]">
+          <span class="key-badge">I</span> 🎒 Rucksack
+        </button>
+      </div>
+    `;
+
+    this.questBox.querySelector('#btn-hotbar-bag')?.addEventListener('click', () => {
+      this.openInventory();
+    });
+
+    this.questBox.querySelectorAll('[data-slot-item]').forEach((el) => {
+      el.addEventListener('click', () => {
+        this.openInventory();
+      });
+    });
+
+    this.questBox.querySelectorAll('[data-slot-relic]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const rId = el.getAttribute('data-slot-relic');
+        if (rId) this.openArtifactInspector(rId);
+      });
+    });
   }
 
   update(): void {
-    const world = this.scene.get('World') as any;
-    if (world && world.currentCompassText) {
+    if (gameState.compassText) {
       const compassEl = document.getElementById('hud-compass');
-      if (compassEl && compassEl.textContent !== world.currentCompassText) {
-        compassEl.textContent = world.currentCompassText;
+      if (compassEl && compassEl.textContent !== gameState.compassText) {
+        compassEl.textContent = gameState.compassText;
       }
     }
   }
@@ -348,9 +558,11 @@ export class UIScene extends Phaser.Scene {
             <label>2. Deine Spielfigur:</label>
             <div class="start-gender-row">
               <button class="gender-btn ${gameState.gender === 'female' ? 'active' : ''}" onclick="window.__VIK_UI__.selectGender('female')">
+                <img src="/assets/gfx/npcs/player_astrid.png" style="width:24px;height:48px;image-rendering:pixelated;object-fit:cover;object-position:0 0;margin-bottom:4px;" /><br />
                 👧 Astrid (Freie Hausherrin)
               </button>
               <button class="gender-btn ${gameState.gender === 'male' ? 'active' : ''}" onclick="window.__VIK_UI__.selectGender('male')">
+                <img src="/assets/gfx/npcs/player_ragnar.png" style="width:24px;height:48px;image-rendering:pixelated;object-fit:cover;object-position:0 0;margin-bottom:4px;" /><br />
                 👦 Ragnar (Fjord-Entdecker)
               </button>
             </div>
