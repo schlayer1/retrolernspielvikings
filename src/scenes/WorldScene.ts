@@ -114,8 +114,9 @@ export class WorldScene extends Phaser.Scene {
     const texKey = gameState.gender === 'female' ? 'player_astrid' : 'player_ragnar';
     this.player = this.add
       .sprite(gameState.playerX, gameState.playerY, texKey, 0)
-      .setOrigin(0.5, 0.9)
+      .setOrigin(0.5, 0.85)
       .setDepth(gameState.playerY);
+    this.player.anims.play(`${texKey}_idle_down`, true);
     this.livingWorldManager.registerPlayer(this.player);
 
     // 6. Living wildlife: Wisente, sheep, rams, horses
@@ -252,23 +253,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private buildPlateauCliffs(): void {
-    const stairCols = [32, 68];
-    for (const sx of stairCols) {
-      if (this.textures.get('world_atlas')?.has('stairs_stone')) {
-        this.add
-          .image(sx * 16, 13 * 16, 'world_atlas', 'stairs_stone')
-          .setScale(0.75)
-          .setDepth(4);
-      }
-    }
-    if (this.textures.exists('cliffs_nature')) {
-      for (let tx = 6; tx < 94; tx += 4) {
-        if (tx >= 30 && tx <= 34) continue;
-        if (tx >= 66 && tx <= 70) continue;
-        if (tx >= 11 && tx <= 19) continue;
-        this.add.image(tx * 16, 12 * 16, 'cliffs_nature').setDepth(3);
-      }
-    }
+    // Nature cliffs and paths are rendered cleanly in the terrain texture
   }
 
   private initDOMLabelLayer(): void {
@@ -462,9 +447,9 @@ export class WorldScene extends Phaser.Scene {
               // Rich Nordic Flora Biome: Lush meadow grass, deep forest grass, mossy floor
               const wave = Math.sin(x * 0.024 + y * 0.02) * 0.5 + Math.cos(x * 0.018 - y * 0.026) * 0.5;
               if (wave + dither * 0.55 > 0.65) {
-                rgb = sampleBlock(a2, 0, 3, px, py); // Mossy deep pine forest floor
-              } else if (wave + dither * 0.55 > 0.2) {
                 rgb = sampleBlock(a2, 0, 1, px, py); // Deep forest grass
+              } else if (wave + dither * 0.55 > 0.2) {
+                rgb = sampleBlock(a2, 0, 1, px, py); // Forest grass
               } else {
                 rgb = sampleBlock(a2, 1, 1, px, py); // Lush meadow grass
               }

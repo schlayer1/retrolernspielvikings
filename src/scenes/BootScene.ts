@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { gameState } from '../systems/GameState';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -247,8 +248,29 @@ export class BootScene extends Phaser.Scene {
     }
 
     // Transition to World and UI
+    this.extractPreviewImages();
     this.scene.start('World');
     this.scene.start('UI');
+  }
+
+  private extractPreviewImages(): void {
+    const toDataUrl = (texKey: string, sx = 0, sy = 0, sw = 16, sh = 32): string => {
+      try {
+        const src = this.textures.get(texKey).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+        const c = document.createElement('canvas');
+        c.width = sw;
+        c.height = sh;
+        const ctx = c.getContext('2d')!;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(src, sx, sy, sw, sh, 0, 0, sw, sh);
+        return c.toDataURL();
+      } catch {
+        return '';
+      }
+    };
+
+    gameState.malePreviewUrl = toDataUrl('player_ragnar', 0, 0, 16, 32);
+    gameState.femalePreviewUrl = toDataUrl('player_astrid', 0, 0, 16, 32);
   }
 
   private createWalkAnimations(key: string): void {

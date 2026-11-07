@@ -558,11 +558,11 @@ export class UIScene extends Phaser.Scene {
             <label>2. Deine Spielfigur:</label>
             <div class="start-gender-row">
               <button class="gender-btn ${gameState.gender === 'female' ? 'active' : ''}" onclick="window.__VIK_UI__.selectGender('female')">
-                <img src="/assets/gfx/npcs/player_astrid.png" style="width:24px;height:48px;image-rendering:pixelated;object-fit:cover;object-position:0 0;margin-bottom:4px;" /><br />
+                <img src="${gameState.femalePreviewUrl || '/assets/gfx/npcs/player_astrid.png'}" style="width:24px;height:48px;image-rendering:pixelated;margin-bottom:4px;" /><br />
                 👧 Astrid (Freie Hausherrin)
               </button>
               <button class="gender-btn ${gameState.gender === 'male' ? 'active' : ''}" onclick="window.__VIK_UI__.selectGender('male')">
-                <img src="/assets/gfx/npcs/player_ragnar.png" style="width:24px;height:48px;image-rendering:pixelated;object-fit:cover;object-position:0 0;margin-bottom:4px;" /><br />
+                <img src="${gameState.malePreviewUrl || '/assets/gfx/npcs/player_ragnar.png'}" style="width:24px;height:48px;image-rendering:pixelated;margin-bottom:4px;" /><br />
                 👦 Ragnar (Fjord-Entdecker)
               </button>
             </div>
@@ -611,6 +611,10 @@ export class UIScene extends Phaser.Scene {
     gameState.gender = g;
     if (g === 'female' && gameState.playerName === 'Ragnar') gameState.playerName = 'Astrid';
     if (g === 'male' && gameState.playerName === 'Astrid') gameState.playerName = 'Ragnar';
+    const world = this.scene.get('World') as any;
+    if (world?.refreshCharacterAppearance) {
+      world.refreshCharacterAppearance();
+    }
     this.openStartScreen();
   }
 

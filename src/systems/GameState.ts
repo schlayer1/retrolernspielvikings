@@ -60,6 +60,8 @@ export class GameState {
   public gender: PlayerGender = 'female';
   public role: PlayerRole = 'hofherr';
   public playerName = 'Astrid';
+  public malePreviewUrl = '';
+  public femalePreviewUrl = '';
   public playTimeSeconds = 0;
   public walkedDistanceMeters = 0;
   public storyFlags: Record<string, boolean> = {};
